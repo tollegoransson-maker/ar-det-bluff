@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta property="og:title" content="Är det bluff?">
+<meta property="og:description" content="Kolla om ett sms, mejl eller samtal är ett bedrägeri. Gratis och på svenska.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="sv_SE">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%23B4142B%27/%3E%3Cpath d=%27M28 13h8v26h-8zM28 45h8v8h-8z%27 fill=%27%23fff%27/%3E%3C/svg%3E">
+<style>:root{color-scheme:light}[hidden]{display:none!important}</style>
+<title>Är det bluff?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Kolla om ett sms, mejl eller samtal är ett bedrägeri. Gratis och på svenska. Texten du klistrar in stannar på din enhet.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: en dokumentkolumn (44rem) som en tryckt konsumentguide. Varje del har sin egen form:
+   verktyget, ett anslag som det i trappuppgången, en uppslagstabell och en numrerad lista.
+   Rött betyder fara, gult är en överstrykningspenna. */
+:root {
+  --bg: #FFFFFF;
+  --surface: #F3F4F5;
+  --ink: #0E1113;
+  --ink-2: #4A535C;
+  --line: #D5D9DD;
+  --field: #0E1113;
+  --accent: #1F4E8C;
+  --accent-hover: #163B6B;
+  --on-accent: #FFFFFF;
+  --danger: #B4142B;
+  --danger-text: #B4142B;
+  --on-danger: #FFFFFF;
+  --caution-bg: #FFF0D4;
+  --caution-ink: #5E3300;
+  --calm-bg: #E8EFF7;
+  --calm-ink: #163A63;
+  --mark: #FFE27A;
+  --mark-ink: #0E1113;
+  --focus: #1F4E8C;
+  --font-head: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111315; --surface: #1A1D21; --ink: #ECEEF0; --ink-2: #A9B1BA; --line: #2D333A; --field: #8D97A1;
+    --accent: #93B8EC; --accent-hover: #B7D0F3; --on-accent: #0B1624;
+    --danger: #C1283E; --danger-text: #FF8F8F; --on-danger: #FFFFFF;
+    --caution-bg: #35270F; --caution-ink: #FFD592;
+    --calm-bg: #17283B; --calm-ink: #C3D9F4;
+    --mark: #7F6110; --mark-ink: #FFF7DC; --focus: #93B8EC;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111315; --surface: #1A1D21; --ink: #ECEEF0; --ink-2: #A9B1BA; --line: #2D333A; --field: #8D97A1;
+  --accent: #93B8EC; --accent-hover: #B7D0F3; --on-accent: #0B1624;
+  --danger: #C1283E; --danger-text: #FF8F8F; --on-danger: #FFFFFF;
+  --caution-bg: #35270F; --caution-ink: #FFD592;
+  --calm-bg: #17283B; --calm-ink: #C3D9F4;
+  --mark: #7F6110; --mark-ink: #FFF7DC; --focus: #93B8EC;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 1.125rem; line-height: 1.6; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: var(--accent-hover); text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+h1, h2, h3, h4 { text-wrap: balance; }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.wrap {
+  max-width: 44rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+
+/* Sidhuvud */
+.site-head { border-bottom: 1px solid var(--line); }
+.head-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; }
+.wordmark { font-family: var(--font-head); font-weight: 700; font-size: 1.3rem; letter-spacing: -0.005em; color: var(--ink); text-decoration: none; }
+.wordmark:hover { color: var(--ink); }
+.head-link { font-weight: 600; }
+
+/* Inledning och verktyg */
+.hero { padding-block: 52px 72px; }
+h1 {
+  font-family: var(--font-head); font-weight: 700;
+  font-size: 2.4rem; font-size: clamp(2.2rem, 6.2vw, 3.2rem);
+  line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 16px; max-width: 15em;
+}
+.lead { font-size: 1.25rem; line-height: 1.5; margin: 0; max-width: 32em; }
+.tabs { display: flex; gap: 32px; margin-top: 44px; border-bottom: 1px solid var(--line); }
+.tab {
+  -webkit-appearance: none; appearance: none; background: none; border: 0; border-bottom: 4px solid transparent;
+  margin: 0 0 -1px; padding: 12px 0 12px; color: var(--accent); cursor: pointer; text-align: left;
+  font-family: var(--font-body); font-weight: 600; font-size: 1.0625rem; line-height: 1.3;
+}
+.tab:hover { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 3px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); text-decoration: none; }
+.panel { padding-top: 32px; }
+.panel-intro { margin: 0 0 24px; max-width: 36em; }
+.label { display: block; padding: 0; margin: 0 0 2px; font-weight: 700; font-size: 1.1875rem; }
+.hint { margin: 0 0 12px; color: var(--ink-2); font-size: 1.0625rem; }
+textarea, .field {
+  display: block; width: 100%; padding: 12px 14px; border: 2px solid var(--field); border-radius: 3px;
+  background: var(--bg); color: var(--ink); font: inherit; font-size: 1.125rem; line-height: 1.5;
+}
+textarea { min-height: 9.5rem; resize: vertical; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-top: 18px; }
+.btn {
+  -webkit-appearance: none; appearance: none; display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px; padding: 12px 24px; border: 0; border-radius: 3px; background: var(--accent); color: var(--on-accent);
+  font-family: var(--font-body); font-weight: 600; font-size: 1.125rem; line-height: 1.2; cursor: pointer;
+}
+.btn:hover { background: var(--accent-hover); }
+.linkbtn {
+  -webkit-appearance: none; appearance: none; background: none; border: 0; padding: 0; margin: 0;
+  color: var(--accent); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.linkbtn:hover { color: var(--accent-hover); text-decoration-thickness: 2px; }
+.linkbtn[aria-pressed="true"] { color: var(--ink); font-weight: 700; text-decoration: none; }
+.examples { margin: 22px 0 0; max-width: 38em; color: var(--ink-2); font-size: 1.0625rem; line-height: 1.75; }
+
+/* Svar */
+.result { margin-top: 36px; }
+.result:empty { display: none; }
+.example-note { margin: 0 0 12px; color: var(--ink-2); font-size: 1rem; }
+.verdict { padding: 22px 24px 24px; border-radius: 3px; background: var(--v-bg); color: var(--v-ink); }
+.verdict.high { --v-bg: var(--danger); --v-ink: var(--on-danger); }
+.verdict.medium { --v-bg: var(--caution-bg); --v-ink: var(--caution-ink); }
+.verdict.low { --v-bg: var(--calm-bg); --v-ink: var(--calm-ink); }
+.verdict-title {
+  font-family: var(--font-head); font-weight: 700; font-size: 1.75rem; font-size: clamp(1.6rem, 4.6vw, 2.05rem);
+  line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 8px;
+}
+.verdict p { margin: 0; }
+.verdict .verdict-kind { margin-top: 12px; font-size: 1.0625rem; }
+.verdict ul { margin: 14px 0 0; padding-left: 1.25em; }
+.verdict li + li { margin-top: 6px; }
+.verdict a { color: inherit; font-weight: 700; }
+.verdict .verdict-more { margin-top: 14px; }
+.result h4 { margin: 32px 0 8px; font-size: 1.25rem; line-height: 1.3; }
+.list { margin: 0; padding-left: 1.25em; }
+.list li + li { margin-top: 8px; }
+.official { margin: 16px 0 0; }
+.marked { padding: 16px 18px; border-radius: 3px; background: var(--surface); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow: auto; }
+.marked mark { color: var(--mark-ink); background: var(--mark); padding: 0 0.1em; border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.marked mark.crit { box-shadow: inset 0 -2px 0 var(--danger); }
+.marked sup { font-family: var(--font-body); font-weight: 700; font-size: 0.72em; line-height: 0; margin-left: 0.2em; }
+.key { margin: 14px 0 0; padding-left: 1.6em; color: var(--ink-2); }
+.key li { padding-left: 0.2em; }
+.key li + li { margin-top: 8px; }
+.key li::marker { font-weight: 700; color: var(--ink); }
+.key strong { color: var(--ink); }
+.none { margin: 20px 0 0; }
+.empty { margin: 0; color: var(--ink-2); }
+
+/* Samtal */
+.checks { min-width: 0; margin: 0; padding: 0; border: 0; }
+.checks legend { margin-bottom: 10px; }
+.check { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 16px; align-items: start; padding: 14px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.check:last-of-type { border-bottom: 1px solid var(--line); }
+.check input {
+  -webkit-appearance: none; appearance: none; display: grid; place-items: center; width: 30px; height: 30px; margin: 0;
+  border: 2px solid var(--field); border-radius: 3px; background: var(--bg); cursor: pointer;
+}
+.check input::after { content: ""; width: 14px; height: 8px; border-left: 3px solid var(--bg); border-bottom: 3px solid var(--bg); transform: translateY(-2px) rotate(-45deg); opacity: 0; }
+.check input:checked { background: var(--ink); border-color: var(--ink); }
+.check input:checked::after { opacity: 1; }
+.callresult { margin-top: 28px; }
+.callresult:empty { display: none; }
+.callreset { margin: 16px 0 0; }
+
+/* Lurad */
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: 8px; padding: 18px 0; border-top: 1px solid var(--line); }
+.steps li:last-child { border-bottom: 1px solid var(--line); }
+.steps li::before { content: counter(step); font-family: var(--font-head); font-weight: 700; font-size: 1.5rem; line-height: 1.2; }
+.steps h3 { margin: 0 0 4px; font-size: 1.1875rem; line-height: 1.35; }
+.steps p { margin: 0; }
+.num { font-weight: 700; white-space: nowrap; }
+
+/* Avsnitt */
+.section { padding-block: 64px; border-top: 1px solid var(--line); }
+h2 {
+  font-family: var(--font-head); font-weight: 700; font-size: 1.9rem; font-size: clamp(1.75rem, 4.6vw, 2.25rem);
+  line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 12px;
+}
+.intro { margin: 0 0 28px; max-width: 36em; color: var(--ink-2); }
+
+/* Anslaget, samma som affischen */
+.notice { padding: 26px 28px 24px; border: 2px solid var(--ink); border-top: 10px solid var(--danger); background: var(--bg); }
+.notice-kicker { margin: 0; font-weight: 700; color: var(--danger-text); }
+.notice-q {
+  margin: 6px 0 0; font-family: var(--font-head); font-weight: 700; font-size: 1.6rem; font-size: clamp(1.45rem, 4.4vw, 2rem);
+  line-height: 1.15; letter-spacing: -0.01em; max-width: 17em;
+}
+.notice-stop {
+  margin: 6px 0 0; font-family: var(--font-head); font-weight: 700; font-size: 4rem; font-size: clamp(3.3rem, 13vw, 5.6rem);
+  line-height: 0.95; letter-spacing: -0.025em; color: var(--danger-text);
+}
+.notice-sub { margin: 14px 0 0; font-size: 1.1875rem; max-width: 30em; }
+.notice-rules { list-style: none; margin: 26px 0 0; padding: 0; }
+.notice-rules li { padding: 11px 0; border-top: 1px solid var(--line); }
+.notice-rules li:last-child { border-bottom: 1px solid var(--line); }
+.notice-foot { margin: 16px 0 0; font-size: 1rem; color: var(--ink-2); }
+
+/* Uppslagstabellen */
+.scams { width: 100%; border-collapse: collapse; }
+.scams th, .scams td { padding: 14px 18px 14px 0; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+.scams thead th { padding-top: 0; border-top: 0; color: var(--ink-2); font-size: 1rem; font-weight: 600; }
+.scams tbody tr:last-child > * { border-bottom: 1px solid var(--line); }
+.scams tbody th { width: 24%; font-family: var(--font-head); font-weight: 700; font-size: 1.15rem; line-height: 1.35; }
+.scams td.say { width: 38%; color: var(--ink-2); font-style: italic; }
+.scams td:last-child { padding-right: 0; }
+
+/* Dela */
+.section-share { background: var(--surface); }
+.copystatus { min-height: 1.6em; margin: 12px 0 0; font-weight: 600; }
+.linkline { margin-top: 20px; }
+.share-more { margin: 28px 0 0; max-width: 38em; }
+
+/* Sidfot */
+.site-foot { padding-block: 44px 64px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 1rem; }
+.foot-grid { display: grid; gap: 32px; }
+.site-foot h2 { margin: 0 0 8px; font-family: var(--font-body); font-weight: 700; font-size: 1.125rem; letter-spacing: 0; color: var(--ink); }
+.site-foot p { margin: 0 0 10px; }
+.sources { margin: 0; padding-left: 1.1em; }
+.sources li + li { margin-top: 6px; }
+.updated { grid-column: 1 / -1; margin: 0; }
+
+@media (min-width: 720px) {
+  .foot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .scams thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .scams, .scams tbody, .scams tr, .scams th, .scams td { display: block; width: auto; }
+  .scams tbody tr { padding: 16px 0; border-top: 1px solid var(--line); }
+  .scams tbody tr:last-child { border-bottom: 1px solid var(--line); }
+  .scams tbody th, .scams td { padding: 0; border: 0 !important; }
+  .scams tbody th { width: auto; }
+  .scams td { margin-top: 8px; }
+  .scams td::before { content: attr(data-label); display: block; color: var(--ink-2); font-size: 0.95rem; font-style: normal; font-weight: 600; }
+}
+@media (max-width: 600px) {
+  .hero { padding-block: 36px 56px; }
+  .section { padding-block: 48px; }
+  .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 36px; }
+  .tab { font-size: 1rem; }
+  .verdict { padding: 18px 18px 20px; }
+  .notice { padding: 20px 18px 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <div class="wrap head-row">
+    <a class="wordmark" href="#verktyg">Är det bluff?</a>
+    <a class="head-link" href="#dela">Dela sidan</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" id="verktyg" aria-labelledby="titel">
+    <div class="wrap">
+      <h1 id="titel">Fått ett konstigt sms, mejl eller samtal?</h1>
+      <p class="lead">Kolla det här innan du gör något. Du får svar direkt, och texten du klistrar in stannar på din enhet.</p>
+
+      <div class="tabs" role="tablist" aria-label="Vad vill du kolla?">
+        <button class="tab" role="tab" id="tab-meddelande" aria-controls="panel-meddelande" aria-selected="true">Kolla ett meddelande</button>
+        <button class="tab" role="tab" id="tab-samtal" aria-controls="panel-samtal" aria-selected="false" tabindex="-1">Kolla ett samtal</button>
+        <button class="tab" role="tab" id="tab-lurad" aria-controls="panel-lurad" aria-selected="false" tabindex="-1">Jag har blivit lurad</button>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-meddelande" aria-labelledby="tab-meddelande">
+        <label class="label" for="msg">Klistra in meddelandet</label>
+        <p class="hint" id="msg-hint">Kopiera texten från sms:et, mejlet eller chatten och klistra in den här.</p>
+        <textarea id="msg" rows="6" spellcheck="false" autocomplete="off" aria-describedby="msg-hint"></textarea>
+        <div class="actions">
+          <button class="btn" id="check" type="button">Kolla meddelandet</button>
+          <button class="linkbtn" id="clear" type="button">Töm rutan</button>
+        </div>
+        <p class="examples">Inget eget meddelande till hands? Prova ett påhittat exempel:
+          <button class="linkbtn" type="button" data-ex="paket" aria-pressed="false">paket-sms</button>,
+          <button class="linkbtn" type="button" data-ex="mamma" aria-pressed="false">”Hej mamma”</button>,
+          <button class="linkbtn" type="button" data-ex="skatt" aria-pressed="false">skatteåterbäring</button>,
+          <button class="linkbtn" type="button" data-ex="blocket" aria-pressed="false">köpare på Blocket</button>
+          eller <button class="linkbtn" type="button" data-ex="vanligt" aria-pressed="false">ett vanligt sms</button>.
+        </p>
+        <noscript><p>Verktyget behöver JavaScript. Reglerna längre ner på sidan gäller ändå.</p></noscript>
+        <div class="result" id="result" aria-live="polite"></div>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-samtal" aria-labelledby="tab-samtal" hidden>
+        <p class="panel-intro"><strong>Pågår samtalet just nu?</strong> Du får alltid lägga på. Polisens råd är att våga vara otrevlig.</p>
+        <fieldset class="checks">
+          <legend class="label">Kryssa i det som stämmer</legend>
+          <label class="check"><input type="checkbox" id="q-caller" value="caller"><span>Personen säger att hen ringer från en bank, polisen, en myndighet eller ett företag.</span></label>
+          <label class="check"><input type="checkbox" id="q-bankid" value="bankid"><span>Personen vill att du loggar in, legitimerar dig eller skriver under med BankID.</span></label>
+          <label class="check"><input type="checkbox" id="q-codes" value="codes"><span>Personen frågar efter koder, kortnummer, lösenord eller ditt personnummer.</span></label>
+          <label class="check"><input type="checkbox" id="q-money" value="money"><span>Personen vill att du flyttar pengar, till exempel till ett ”säkert konto”.</span></label>
+          <label class="check"><input type="checkbox" id="q-remote" value="remote"><span>Personen ber dig installera en app, dela skärmen eller låta hen styra din dator eller telefon.</span></label>
+          <label class="check"><input type="checkbox" id="q-pickup" value="pickup"><span>Någon ska komma hem till dig och hämta kort, kontanter eller smycken.</span></label>
+          <label class="check"><input type="checkbox" id="q-pressure" value="pressure"><span>Det är bråttom, eller du får inte lägga på eller prata med någon annan.</span></label>
+          <label class="check"><input type="checkbox" id="q-offer" value="offer"><span>Samtalet handlar om en investering, en vinst eller pengar du ska få tillbaka.</span></label>
+          <label class="check"><input type="checkbox" id="q-family" value="family"><span>Någon i din familj sägs vara i trubbel och behöva pengar snabbt.</span></label>
+        </fieldset>
+        <div class="callresult" id="callresult" aria-live="polite"></div>
+        <p class="callreset"><button class="linkbtn" id="callreset" type="button" hidden>Börja om</button></p>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-lurad" aria-labelledby="tab-lurad" hidden>
+        <p class="panel-intro"><strong>Agera direkt.</strong> Ju snabbare du ringer banken, desto större är chansen att stoppa pengarna. Du har inget att skämmas för.</p>
+        <ol class="steps">
+          <li><div><h3>Ring din bank direkt</h3><p>Be dem spärra kort, BankID och internetbank och stoppa betalningar som inte har gått iväg än. Bankerna har spärrtjänst dygnet runt. Numret finns på bankens webbplats och ofta på baksidan av ditt kort. Använd aldrig ett nummer som bedragaren har gett dig.</p></div></li>
+          <li><div><h3>Polisanmäl</h3><p>Ring <a class="num" href="tel:11414">114 14</a> eller anmäl på polisen.se. Pågår brottet just nu, eller är någon på väg hem till dig? Ring <a class="num" href="tel:112">112</a>. Spara sms, mejl, telefonnummer och kontonummer som bevis.</p></div></li>
+          <li><div><h3>Begär pengarna tillbaka</h3><p>Anmäl skriftligt till banken och begär ersättning, inom 13 månader. Efter en dom i Högsta domstolen kan du ha rätt till ersättning även om du själv loggade in med BankID, och det är banken som måste visa att du ska stå för förlusten. Konsumentverket har färdiga mallar. Säger banken nej kan du vända dig till Allmänna reklamationsnämnden (ARN).</p></div></li>
+          <li><div><h3>Har du lämnat ut personnummer, BankID eller id-kort?</h3><p>Lägg en bedrägerispärr hos ett kreditupplysningsföretag, till exempel UC. Spärren gäller då hos alla de stora kreditupplysningsföretagen och gör det svårare att ta lån i ditt namn.</p></div></li>
+          <li><div><h3>Har du lämnat ut ett lösenord?</h3><p>Byt det direkt, och börja med din e-post. Använd olika lösenord för olika tjänster.</p></div></li>
+          <li><div><h3>Har någon styrt din dator eller telefon?</h3><p>Koppla bort internet och avinstallera appen. Låt någon du litar på gå igenom enheten innan du loggar in på banken igen.</p></div></li>
+          <li><div><h3>Se upp för nästa bluff</h3><p>Efter ett bedrägeri hör ofta någon av sig och lovar att få tillbaka pengarna mot en avgift. Det är en ny bluff. Ingen myndighet ringer och erbjuder sådan hjälp mot betalning.</p></div></li>
+          <li><div><h3>Prata med någon</h3><p>Bedragarna är proffs, och det kan hända vem som helst. Brottsofferjouren ger gratis stöd på <a class="num" href="tel:116006">116 006</a>.</p></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="regler" aria-labelledby="regler-h">
+    <div class="wrap">
+      <h2 id="regler-h">Det här gäller alltid</h2>
+      <p class="intro">Bedragare byter knep hela tiden, men de vill nästan alltid samma sak: att du ska använda BankID, lämna ut koder eller flytta pengar.</p>
+      <div class="notice">
+        <p class="notice-kicker">Varning för bedragare</p>
+        <p class="notice-q">Ber någon dig använda BankID i telefon?</p>
+        <p class="notice-stop">Lägg på.</p>
+        <p class="notice-sub">Ring upp själv, på ett nummer du har letat upp själv. Det är aldrig oartigt mot en bedragare.</p>
+        <ul class="notice-rules">
+          <li><strong>BankID är din namnteckning.</strong> Använd det bara när du själv har startat något.</li>
+          <li><strong>Ingen bank eller polis</strong> ber dig flytta pengar, lämna koder eller installera appar.</li>
+          <li><strong>Polisen hämtar aldrig</strong> kort, kontanter eller smycken hemma hos dig.</li>
+          <li><strong>Klicka inte på länkar i sms</strong> om paket, skatt, skulder eller ditt konto.</li>
+          <li><strong>Bråttom är ett varningstecken.</strong> Du har alltid tid att lägga på och fråga någon.</li>
+          <li><strong>Bestäm ett familjeord.</strong> Röster kan härmas med AI, men inte ett ord som bara ni känner till.</li>
+        </ul>
+        <p class="notice-foot">Lappen finns också som <a href="affisch.pdf">affisch att skriva ut</a> (pdf, A4).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="bluffar" aria-labelledby="bluffar-h">
+    <div class="wrap">
+      <h2 id="bluffar-h">Så låter bluffarna</h2>
+      <p class="intro">Bedragarna använder ofta riktiga namn på banker, myndigheter och företag, och nummer som ser äkta ut.</p>
+      <table class="scams">
+        <thead><tr><th scope="col">Bluffen</th><th scope="col">Så kan det låta</th><th scope="col">Så avslöjar du den</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Falska banken</th><td class="say" data-label="Så kan det låta">”Jag ringer från bankens säkerhetsavdelning. Du måste legitimera dig med BankID så att vi kan stoppa ett köp.”</td><td data-label="Så avslöjar du den">Banken ber dig aldrig använda BankID i telefon. Lägg på och ring bankens nummer själv.</td></tr>
+          <tr><th scope="row">Falska polisen</th><td class="say" data-label="Så kan det låta">”Vi har gripit ett gäng som har dina uppgifter. En kollega kommer och hämtar ditt kort och dina smycken.”</td><td data-label="Så avslöjar du den">Polisen hämtar aldrig pengar, kort eller smycken. Öppna inte dörren och ring 112.</td></tr>
+          <tr><th scope="row">Paketbluffen</th><td class="say" data-label="Så kan det låta">”Ditt paket kunde inte levereras. Betala 19 kr i tull via länken inom 24 timmar.”</td><td data-label="Så avslöjar du den">Kolla leveransen i fraktbolagets egen app. Betala aldrig via en länk i ett sms.</td></tr>
+          <tr><th scope="row">”Hej mamma”</th><td class="say" data-label="Så kan det låta">”Hej mamma, jag har tappat telefonen och har ett nytt nummer. Kan du swisha 4 800 kr?”</td><td data-label="Så avslöjar du den">Ring ditt barn på det gamla numret, eller ställ en fråga som bara hen kan svara på.</td></tr>
+          <tr><th scope="row">Skatteåterbäringen</th><td class="say" data-label="Så kan det låta">”Du har 2 341 kr i skatteåterbäring. Fyll i dina kortuppgifter för att få pengarna.”</td><td data-label="Så avslöjar du den">Skatteverket frågar aldrig efter kontouppgifter i sms eller mejl, bara i sina e-tjänster.</td></tr>
+          <tr><th scope="row">Köparen som ”betalar”</th><td class="say" data-label="Så kan det låta">”Jag köper din soffa! Godkänn bara med BankID så får du pengarna direkt.”</td><td data-label="Så avslöjar du den">Du behöver aldrig BankID eller kortuppgifter för att ta emot pengar. Det du godkänner är en betalning från dig.</td></tr>
+          <tr><th scope="row">Investeringsbluffen</th><td class="say" data-label="Så kan det låta">”Känd svensk avslöjar hur hon blev rik på AI-trading. Investera 2 500 kr idag.”</td><td data-label="Så avslöjar du den">Kändisar gör inte reklam för snabba pengar, och garanterad avkastning finns inte.</td></tr>
+          <tr><th scope="row">Kärleksbluffen</th><td class="say" data-label="Så kan det låta">”Älskling, jag sitter fast i tullen och behöver 15 000 kr för att komma hem till dig.”</td><td data-label="Så avslöjar du den">Skicka aldrig pengar till någon du bara har träffat på nätet, hur äkta känslorna än verkar.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section section-share" id="dela" aria-labelledby="dela-h">
+    <div class="wrap">
+      <h2 id="dela-h">Dela sidan</h2>
+      <p class="intro">Många bedrägerier stoppas av att någon har pratat om dem i förväg. Skicka sidan till någon som kan behöva den, till exempel en förälder eller en granne.</p>
+      <label class="label" for="sharemsg">Färdigt meddelande att skicka</label>
+      <textarea id="sharemsg" rows="5" readonly></textarea>
+      <div class="actions">
+        <button class="btn" id="copymsg" type="button">Kopiera meddelandet</button>
+        <button class="linkbtn" id="copylink" type="button">Kopiera bara länken</button>
+      </div>
+      <p class="copystatus" id="copystatus" role="status"></p>
+      <div class="linkline" id="linkline">
+        <label class="label" for="sharelink">Länk till sidan</label>
+        <input class="field" id="sharelink" type="text" readonly>
+      </div>
+      <p class="share-more">Ska du prata med en äldre anhörig? Polisen har ett stöd för samtalet: <a href="https://polisen.se/utsatt-for-brott/skydda-dig-mot-brott/brott-mot-aldre-och-personer-med-funktionsnedsattning/prata-med-nara-och-kara-om-bedragerier/" target="_blank" rel="noopener">Prata med nära och kära om bedrägerier</a>.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap foot-grid">
+    <div>
+      <h2>Om sidan</h2>
+      <p>Är det bluff? är en fristående och gratis sida. Den är inte kopplad till någon bank, myndighet eller något företag.</p>
+      <p>Analysen sker i din webbläsare. Texten du klistrar in skickas inte någonstans och sparas inte.</p>
+      <p>Verktyget letar efter kända varningstecken och kan missa nya knep. Lita alltid på din magkänsla och kontrollera med avsändaren på ett sätt du själv väljer.</p>
+    </div>
+    <div>
+      <h2>Källor och mer hjälp</h2>
+      <ul class="sources">
+        <li><a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/telefonbedrageri/" target="_blank" rel="noopener">Polisen: Telefonbedrägeri</a></li>
+        <li><a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/vaga-vara-otrevlig/" target="_blank" rel="noopener">Polisen: Våga vara otrevlig</a></li>
+        <li><a href="https://www.skatteverket.se/omoss/kontaktaoss/mejlaoss/sahanterardubluffmejl.4.8bcb26d16a5646a148128ae.html" target="_blank" rel="noopener">Skatteverket: Så hanterar du bluffmejl</a></li>
+        <li><a href="https://www.konsumentverket.se/konsumentratt/bankbedragerier-och-kortbedragerier/" target="_blank" rel="noopener">Konsumentverket: Bank- och kortbedrägerier</a></li>
+        <li><a href="https://www.fi.se/sv/publicerat/nyheter/2021/se-upp-for-bedragare-som-lovar-pengarna-tillbaka/" target="_blank" rel="noopener">Finansinspektionen: Bedragare som lovar pengarna tillbaka</a></li>
+        <li><a href="https://www.minuc.se/bedragerisparr" target="_blank" rel="noopener">UC: Bedrägerispärr</a></li>
+        <li><a href="https://www.brottsofferjouren.se/" target="_blank" rel="noopener">Brottsofferjouren</a>, stödlinje 116 006</li>
+      </ul>
+    </div>
+    <p class="updated">Senast uppdaterad november 2026.</p>
+  </div>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
