@@ -499,7 +499,7 @@ var Bluffkoll = (function () {
 
 (function () {
   'use strict';
-  var SHARE_URL = location.protocol.indexOf('http') === 0 ? location.origin + '/' : 'https://claude.ai/artifact/VJ38qvhU2CjEAhPZ2W7Ebk';
+  var SHARE_URL = location.protocol.indexOf('http') === 0 ? location.origin + location.pathname.replace(/index\.html$/, '') : 'https://tollegoransson-maker.github.io/ar-det-bluff/';
   var reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
