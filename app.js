@@ -38,7 +38,7 @@ var Bluffkoll = (function () {
       todo: 'Godkänn ingenting. Pengar som skickas till dig kommer in utan att du gör något.',
       re: [
         W('(?:ta emot|tar emot|få|motta)[^.!?\\n]{0,40}(?:swish\\w*|betalning\\w*|pengar\\w*|beloppet|ersättning\\w*|återbetalning\\w*|utbetalning\\w*)[^.!?\\n]{0,60}(?:bank[- ]?id|godkänn\\w*|signera\\w*|legitimera\\w*|kortuppgifter\\w*|kortnummer|fyll i|logga in)'),
-        W('(?:bank[- ]?id|godkänn\\w*|signera\\w*|legitimera\\w*|kortuppgifter\\w*|kortnummer|fyll i|logga in)[^.!?\\n]{0,60}(?:för att|så kan du|så får du|så att du (?:kan|får)|och sen (?:får|kan) du|och få)[^.!?\\n]{0,40}(?:pengar\\w*|betalning\\w*|beloppet|swish\\w*|ersättning\\w*|återbetalning\\w*|utbetalning\\w*)'),
+        W('(?:bank[- ]?id|godkänn\\w*|signera\\w*|legitimera\\w*|kortuppgifter\\w*|kortnummer|fyll i|logga in)[^.!?\\n]{0,60}(?:för att|så kan du|så får du|så att du (?:kan|får)|och sen (?:får|kan) du|och få)[^.!?\\n]{0,40}(?:pengar\\w*|betalt|betalning\\w*|beloppet|swish\\w*|ersättning\\w*|återbetalning\\w*|utbetalning\\w*)'),
         W('(?:receive|get|claim)[^.!?\\n]{0,40}(?:payment|money|funds|refund)[^.!?\\n]{0,40}(?:card|bank ?id|log ?in|verify|confirm)')
       ] },
     { id: 'cards', w: 3, neg: true,
@@ -53,7 +53,10 @@ var Bluffkoll = (function () {
       title: 'Säger att någon ska hämta pengar, kort eller smycken',
       why: 'Polisen och banken hämtar aldrig kort, kontanter eller smycken hemma hos dig.',
       todo: 'Öppna inte dörren och lämna inte ifrån dig något. Ring 112 om någon är på väg.',
-      re: [W('(?:polis\\w*|bank\\w*|kollega\\w*|bud\\w*|väktare\\w*|vakt\\w*)[^.!?\\n]{0,80}(?:hämta|hämtar|komma och hämta|förvara|förvarar|ta hand om|samla in)[^.!?\\n]{0,40}(?:smycken|värdesaker|kontanter|pengar\\w*|guld\\w*|bankkort\\w*|kortet|korten|kort)')] },
+      re: [
+        W('(?:polis\\w*|bank\\w*|kollega\\w*|bud\\w*|väktare\\w*|vakt\\w*)[^.!?\\n]{0,80}(?:hämta|hämtar|komma och hämta|förvara|förvarar|ta hand om|samla in)[^.!?\\n]{0,40}(?:smycken|värdesaker|kontanter|pengar\\w*|guld\\w*|bankkort\\w*|kortet|korten|kort)'),
+        W('(?:vill|ska|kommer att|kommer och|måste|behöver)[^.!?\\n]{0,20}(?:ta med sig|ta med|hämta|förvara|ta hand om|samla in|lämna över|överlämna)[^.!?\\n]{0,40}(?:smycken|värdesaker|kontanter|guld\\w*|bankkort\\w*|kortet|korten|kort)')
+      ] },
     { id: 'guaranteed', w: 3,
       title: 'Lovar garanterad vinst',
       why: 'Garanterad avkastning finns inte. Den som lovar det försöker lura dig.',
@@ -102,20 +105,21 @@ var Bluffkoll = (function () {
       todo: 'Ring din bank på numret som står på bankens webbplats eller på ditt kort.',
       re: [W('säkerhetsavdelning\\w*|bedrägeriavdelning\\w*|bedrägerienhet\\w*|säkerhetsenhet\\w*|säkerhetsteam\\w*|spärravdelning\\w*|fraud (?:department|team|unit)|security (?:department|team)')] },
     { id: 'account_problem', w: 2,
-      title: 'Påstår att något är fel med ditt konto',
-      why: 'Ett påstått problem med kontot är ett vanligt sätt att få dig att logga in på en falsk sida eller ringa ett falskt nummer.',
+      title: 'Påstår att något är fel som du måste rätta',
+      why: 'Ett påstått problem med kontot, kortet eller adressen är ett vanligt sätt att få dig att logga in på en falsk sida eller ringa ett falskt nummer.',
       todo: 'Logga in själv i appen eller på webbplatsen, inte via länken, och se om något verkligen är fel.',
       re: [
         W('(?:misstänkt|misstänkta|ovanlig|ovanliga|obehörig|obehöriga|okänd|okända|avvikande) (?:aktivitet\\w*|inloggning\\w*|transaktion\\w*|köp|användning|betalning\\w*|enhet)'),
         W('(?:ditt|ert|din|er) (?:konto|kort|bankkort|abonnemang|e-postkonto|mejlkonto|profil|medlemskap)[^.!?\\n]{0,30}(?:spärrat|spärrats|spärras|låst|låsts|låses|stängt|stängts|stängs|blockerat|blockerats|blockeras|inaktiverat|inaktiveras|avstängt|avstängd|fryst|frysts|begränsat|begränsats|pausat|pausats|hackat|hackats|kapat|kapats)'),
-        W('säkerhetsproblem|säkerhetsåtgärd\\w*|(?:uppdatera|bekräfta|verifiera|kontrollera|validera|säkra) (?:dina|era|ditt|ert|din|er) (?:uppgifter|konto|identitet|information|betalningsuppgifter|kontouppgifter|profil)'),
+        W('säkerhetsproblem|säkerhetsåtgärd\\w*|(?:uppdatera|bekräfta|verifiera|kontrollera|validera|säkra) (?:dina|era|ditt|ert|din|er) (?:uppgifter|konto|identitet|information|betalningsuppgifter|kontouppgifter|profil|adress|leveransadress|adressuppgifter)'),
+        W('(?:ditt|ert) (?:kort|bankkort|konto|kreditkort) har (?:använts|missbrukats|kapats|hackats|spärrats|låsts)'),
         W('unusual activity|suspicious (?:activity|login|sign-in)|account (?:has been |is |was )?(?:locked|suspended|limited|disabled|compromised)|verify your (?:account|identity|information)|update your (?:payment|billing|account)')
       ] },
     { id: 'debt', w: 2,
       title: 'Hotar med skuld, inkasso eller Kronofogden',
       why: 'Hot om skulder ska skrämma dig att betala snabbt. Kontrollera alltid själv, till exempel på kronofogden.se eller hos företaget.',
       todo: 'Betala inget via meddelandet. Kontrollera skulden själv, på ett sätt du väljer.',
-      re: [W('obetald\\w* (?:skuld\\w*|faktura\\w*|räkning\\w*|avgift\\w*|böter|parkeringsavgift\\w*|skatt|vägtull\\w*|trängselskatt)|skuld (?:hos|till)|inkasso\\w*|utmätning\\w*|betalningsanmärkning\\w*|betalningsföreläggande\\w*|rättsliga åtgärder|stämning|kronofogden|debt collect\\w*|legal action|unpaid (?:invoice|bill|fee|toll)')] },
+      re: [W('obetald\\w* (?:skuld\\w*|faktura\\w*|räkning\\w*|avgift\\w*|böter|parkeringsavgift\\w*|skatt|vägtull\\w*|trängselskatt)|skuld (?:hos|till)|betalningskrav\\w*|betalningspåminnelse\\w*|kravbrev\\w*|restskatt\\w*|tilläggsavgift\\w*|inkasso\\w*|utmätning\\w*|betalningsanmärkning\\w*|betalningsföreläggande\\w*|rättsliga åtgärder|stämning|kronofogden|debt collect\\w*|legal action|unpaid (?:invoice|bill|fee|toll)')] },
     { id: 'lure', w: 2,
       title: 'Lockar med pengar, vinst eller gåva',
       why: 'Löften om pengar tillbaka, vinster eller gåvor är ett vanligt lockbete för att komma åt dina kortuppgifter.',
@@ -175,6 +179,16 @@ var Bluffkoll = (function () {
       why: 'Ett nödläge gör att du vill hjälpa till snabbt, utan att kontrollera.',
       todo: 'Ring personen på ett nummer du vet stämmer innan du gör något.',
       re: [W('sjukhus\\w*|olycka|krockat|krock|fast (?:på|i) (?:flygplatsen|tullen|gränsen)|häktad|gripen|fängelse|borgen|advokatkostnad\\w*|nödsituation|nödläge|emergency|hospital|accident|stuck at')] },
+    { id: 'wrong_number', w: 2,
+      title: 'En okänd person vill börja prata',
+      why: 'Ett meddelande som ”råkade” gå till fel nummer är ofta början på en kärleks- eller investeringsbluff.',
+      todo: 'Svara inte på meddelanden från okända som vill börja prata.',
+      re: [W('fel nummer|är det här rätt nummer|jag hittade ditt nummer|ditt nummer i min telefon|kommer du ihåg mig|wrong number|is this the right number')] },
+    { id: 'voicemail', w: 1.5,
+      title: 'Lockar dig att öppna ett meddelande via länk',
+      why: 'Falska röstmeddelanden och ”nya meddelanden” är ett vanligt sätt att få dig att klicka på en farlig länk eller installera en skadlig app.',
+      todo: 'Öppna inte länken. Lyssna på röstbrevlådan eller läs meddelandet som du brukar, i telefonen eller appen.',
+      re: [W('röstmeddelande\\w*|röstbrevlåda\\w*|nytt meddelande väntar|du har ett nytt meddelande via|voicemail|voice message')] },
     { id: 'generic_greeting', w: 0.5,
       title: 'Opersonlig hälsning',
       why: 'Ett företag du är kund hos vet oftast vad du heter.',
@@ -182,7 +196,7 @@ var Bluffkoll = (function () {
       re: [W('(?:bästa|kära|ärade|värderade|hej) (?:kund|kunden|användare|medlem|kontoinnehavare)|dear (?:customer|user|member|client|account holder)|valued customer')] },
     { id: 'family_greet', hidden: true, re: [W('(?:hej|hejsan|hallå|tja|hi|hello) (?:mamma|pappa|mor|far|morsan|farsan|mormor|morfar|farmor|farfar|mom|mum|dad)')] },
     { id: 'parcel', hidden: true, re: [W('paket\\w*|försändelse\\w*|leverans\\w*|levereras|leverera\\w*|utdelning\\w*|tull\\w*|frakt\\w*|kolli|package|parcel|delivery|shipment|customs')] },
-    { id: 'fee_words', hidden: true, re: [W('avgift\\w*|tull\\w*|frakt\\w*|porto|ombokning\\w*|fee|customs|shipping|postage|handling')] },
+    { id: 'fee_words', hidden: true, re: [W('[\\p{L}]*avgift[\\p{L}]*|tull\\w*|frakt\\w*|porto|ombokning\\w*|fee|customs|shipping|postage|handling')] },
     { id: 'romance', hidden: true, re: [W('älskling|min älskade|min kära|mitt hjärta|sweetheart|my love|darling')] },
     { id: 'market', hidden: true, re: [W('blocket|tradera|marketplace|köpa din|köper din|säljer din|din annons|annonsen|köparen|säljaren')] }
   ];
@@ -273,10 +287,10 @@ var Bluffkoll = (function () {
       if (!b.re) b.re = new RegExp('(^|[^\\p{L}\\p{N}])(' + b.words + ')(?![\\p{L}\\p{N}])', b.cs ? 'gu' : 'giu');
       b.re.lastIndex = 0;
       var m = b.re.exec(text);
-      if (m) found.push({ b: b, i: m.index + m[1].length });
+      if (m) found.push({ b: b, i: m.index + m[1].length, t: m[2] });
     });
     found.sort(function (a, c) { return a.i - c.i; });
-    return found.map(function (f) { return f.b; });
+    return found;
   }
 
   function hostOf(raw) {
@@ -397,6 +411,8 @@ var Bluffkoll = (function () {
     if (sig.romance && (ids.money_request || ids.emergency || ids.secrecy)) return 'Kärleksbluffen';
     if (ids.gift_card) return 'Presentkortsbluffen';
     if (ids.lure) return 'Vinst- och återbäringsbluffen';
+    if (ids.voicemail_link) return 'Falskt röstmeddelande';
+    if (ids.wrong_number) return 'Fel nummer-bluffen';
     if (ids.account_problem || ids.bankid_fix || ids.bankid_use || ids.cards || ids.link_lookalike) return 'Nätfiske (falsk inloggning)';
     return null;
   }
@@ -426,10 +442,21 @@ var Bluffkoll = (function () {
         todo: 'Ring ditt barn eller din anhörige på det vanliga numret innan du gör något.', matches: sig.family_greet });
     }
 
-    var mentioned = findBrands(text);
+    var found = findBrands(text);
+    var mentioned = found.map(function (f) { return f.b; });
     var links = findLinks(text, mentioned);
     var groups = {};
     mentioned.forEach(function (b) { groups[b.g] = true; });
+
+    // A bank or authority name next to a request is how most fake contacts open.
+    var asks = sig.call_number || sig.account_problem || sig.cards || sig.bankid_use || sig.bankid_fix || sig.code;
+    var who = found.filter(function (f) { return f.b.g === 'gov' || f.b.g === 'bank'; })[0];
+    if (who && asks) {
+      flags.push({ id: 'impersonation', w: 1, title: 'Säger sig komma från ' + who.b.name,
+        why: 'Banker och myndigheter ber aldrig om koder, kortuppgifter eller BankID i sms, och avsändarnamn går att förfalska.',
+        todo: 'Kontakta ' + who.b.name + ' själv, via deras egen app, webbplats eller ett nummer du letar upp.',
+        matches: [{ s: who.i, e: who.i + who.t.length, t: who.t }] });
+    }
 
     var anyBadUrl = false;
     links.forEach(function (l) {
@@ -454,6 +481,11 @@ var Bluffkoll = (function () {
       if (l.userinfo) flags.push({ id: 'link_userinfo', w: 2.5, title: 'Adressen är byggd för att lura ögat', why: 'Allt som står före @ i en webbadress ignoreras. Länken går egentligen till ' + l.host + '.', todo: 'Klicka inte på länken.', matches: l.ranges });
       if (l.odd) flags.push({ id: 'link_tld', w: 1.5, title: 'Ovanlig adressändelse (.' + l.tld + ')', why: 'Adresser som slutar på till exempel .xyz, .top eller .info är billiga att registrera och vanliga hos bluffsidor.', todo: null, matches: l.ranges });
     });
+    if (anyBadUrl && sig.voicemail) {
+      flags.push({ id: 'voicemail_link', w: 1.5, title: 'Röstmeddelande med länk',
+        why: 'Röstmeddelanden lyssnar du på i telefonen. Ett sms med en länk till ett röstmeddelande är ett vanligt knep för att få dig att installera en skadlig app.',
+        todo: 'Öppna inte länken. Lyssna på röstbrevlådan som du brukar.', matches: sig.voicemail });
+    }
     if (anyBadUrl) {
       var ranges = [];
       links.forEach(function (l) { if (l.kind === 'url' && l.status !== 'official') ranges = ranges.concat(l.ranges); });
@@ -500,6 +532,8 @@ var Bluffkoll = (function () {
 (function () {
   'use strict';
   var SHARE_URL = location.protocol.indexOf('http') === 0 ? location.origin + location.pathname.replace(/index\.html$/, '') : 'https://tollegoransson-maker.github.io/ar-det-bluff/';
+  var CAN_OCR = true;
+  var TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
   var reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
@@ -510,6 +544,16 @@ var Bluffkoll = (function () {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+
+  /* Större text */
+  var bigBtn = $('#bigtext');
+  function setBig(on) {
+    document.documentElement.classList.toggle('big', on);
+    bigBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    try { localStorage.setItem('bluff-big', on ? '1' : '0'); } catch (e) {}
+  }
+  bigBtn.addEventListener('click', function () { setBig(bigBtn.getAttribute('aria-pressed') !== 'true'); });
+  try { if (localStorage.getItem('bluff-big') === '1') setBig(true); } catch (e) {}
 
   /* Flikar */
   var TABS = ['meddelande', 'samtal', 'lurad'];
@@ -540,6 +584,36 @@ var Bluffkoll = (function () {
     selectTab(a.getAttribute('data-goto'), true);
     var bar = $('.tabs');
     if (bar && bar.scrollIntoView) bar.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  });
+
+  /* Uppläsning: läser beskedet och råden med svensk röst, om webbläsaren har en */
+  var canSpeak = 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance !== 'undefined';
+  function speakButton() {
+    return canSpeak ? '<p class="speak"><button class="linkbtn panel-link" type="button" data-speak>Läs upp svaret</button></p>' : '';
+  }
+  function resetSpeak() { $$('[data-speak]').forEach(function (b) { b.textContent = 'Läs upp svaret'; }); }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-speak]') : null;
+    if (!b) return;
+    var synth = window.speechSynthesis;
+    if (synth.speaking) { synth.cancel(); resetSpeak(); return; }
+    var box = b.closest('.result, .callresult');
+    var verdict = box ? box.querySelector('.verdict') : null;
+    if (!verdict) return;
+    var parts = [];
+    Array.prototype.forEach.call(verdict.children, function (el) { if (!el.querySelector('[data-speak]')) parts.push(el.innerText); });
+    var todo = box.querySelector('.list');
+    if (todo) parts.push('Gör så här. ' + todo.innerText);
+    var u = new window.SpeechSynthesisUtterance(parts.join('. ').replace(/\s+/g, ' '));
+    u.lang = 'sv-SE';
+    var voices = synth.getVoices();
+    var sv = voices.filter(function (v) { return /^sv/i.test(v.lang); })[0];
+    if (voices.length && !sv) { b.textContent = 'Det finns ingen svensk röst i den här webbläsaren'; return; }
+    if (sv) u.voice = sv;
+    u.onend = resetSpeak;
+    u.onerror = resetSpeak;
+    b.textContent = 'Sluta läsa';
+    synth.speak(u);
   });
 
   /* Meddelanden */
@@ -603,7 +677,7 @@ var Bluffkoll = (function () {
         ' Klistra in ditt eget meddelande i rutan för att kolla det.</p>';
     }
     h += '<div class="verdict ' + r.level + '" id="verdict"><h3 class="verdict-title">' + V.title + '</h3><p>' + V.sub + '</p>' +
-      (r.type ? '<p class="verdict-kind">Upplägget liknar: <strong>' + esc(r.type) + '</strong></p>' : '') + '</div>';
+      (r.type ? '<p class="verdict-kind">Upplägget liknar: <strong>' + esc(r.type) + '</strong></p>' : '') + speakButton() + '</div>';
     var official = r.links.filter(function (l) { return l.status === 'official' && l.kind === 'url'; });
     if (official.length && r.level !== 'high') {
       h += '<p class="official">Länken går till <strong>' + esc(official[0].reg) + '</strong>, som är den riktiga adressen till ' + esc(official[0].brand.name) +
@@ -629,6 +703,7 @@ var Bluffkoll = (function () {
   }
 
   function run(scroll) {
+    if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     render(Bluffkoll.analyze(msg.value), msg.value);
     if (scroll) {
       var v = $('#verdict');
@@ -653,8 +728,81 @@ var Bluffkoll = (function () {
   msg.addEventListener('paste', function () { setTimeout(function () { exKey = null; markExamples(); run(true); }, 0); });
   $('#check').addEventListener('click', function () { clearTimeout(timer); run(true); });
   $('#clear').addEventListener('click', function () {
-    msg.value = ''; exKey = null; markExamples(); renderEmpty(); msg.focus();
+    msg.value = ''; exKey = null; markExamples(); renderEmpty(); ocrStatus.textContent = ''; msg.focus();
   });
+
+  /* Skärmbild: texten läses av i webbläsaren, bilden skickas ingenstans */
+  var ocrFile = $('#ocr-file'), ocrStatus = $('#ocr-status');
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  function toImage(file) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  // Gråskala, och mörka skärmbilder vänds till mörk text på ljus botten, som textläsaren klarar bäst.
+  function prepare(img) {
+    var scale = img.naturalWidth < 1000 ? 2 : 1;
+    var c = document.createElement('canvas');
+    c.width = img.naturalWidth * scale;
+    c.height = img.naturalHeight * scale;
+    var x = c.getContext('2d');
+    x.drawImage(img, 0, 0, c.width, c.height);
+    var d = x.getImageData(0, 0, c.width, c.height), p = d.data, sum = 0, i;
+    for (i = 0; i < p.length; i += 4) {
+      var g = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
+      p[i] = p[i + 1] = p[i + 2] = g;
+      sum += g;
+    }
+    if (sum / (p.length / 4) < 128) for (i = 0; i < p.length; i += 4) p[i] = p[i + 1] = p[i + 2] = 255 - p[i];
+    x.putImageData(d, 0, 0);
+    return c;
+  }
+  function readImage(file) {
+    var canvas;
+    ocrStatus.textContent = 'Läser in bilden …';
+    toImage(file).then(function (img) {
+      canvas = prepare(img);
+      if (window.Tesseract) return null;
+      ocrStatus.textContent = 'Hämtar textläsaren. Första gången kan det ta en stund …';
+      return loadScript(TESSERACT);
+    }).then(function () {
+      return window.Tesseract.createWorker('swe', 1, {
+        logger: function (m) { if (m.status === 'recognizing text') ocrStatus.textContent = 'Läser texten … ' + Math.round(m.progress * 100) + ' %'; }
+      });
+    }).then(function (worker) {
+      return worker.recognize(canvas).then(function (res) { worker.terminate(); return res.data.text; });
+    }).then(function (text) {
+      // Pratbubblor bryter rader mitt i meningar och länkar. Lägg ihop dem igen, men behåll tomma rader.
+      text = String(text || '').replace(/[ \t]+\n/g, '\n').replace(/-\n(?=\S)/g, '-').replace(/([^\n])\n(?!\n)/g, '$1 ').replace(/\n{3,}/g, '\n\n').trim();
+      if (!text) { ocrStatus.textContent = 'Vi hittade ingen text i bilden. Prova en tydligare skärmbild, eller skriv av meddelandet.'; return; }
+      msg.value = text;
+      exKey = null;
+      markExamples();
+      run(true);
+      ocrStatus.textContent = 'Texten är avläst från bilden. Rätta den i rutan om något blev fel.';
+    }).catch(function () {
+      ocrStatus.textContent = 'Det gick inte att läsa bilden. Kontrollera internetanslutningen, eller skriv av meddelandet.';
+    });
+  }
+  if (CAN_OCR) {
+    $('#ocr').hidden = false;
+    $('#ocr-pick').addEventListener('click', function () { ocrFile.click(); });
+    ocrFile.addEventListener('change', function () {
+      if (ocrFile.files && ocrFile.files[0]) readImage(ocrFile.files[0]);
+      ocrFile.value = '';
+    });
+  }
 
   /* Samtal */
   var TIPS = {
@@ -672,19 +820,102 @@ var Bluffkoll = (function () {
     var on = $$('#panel-samtal input:checked').map(function (i) { return i.value; });
     var stop = on.filter(function (k) { return k !== 'caller'; });
     callReset.hidden = !on.length;
+    if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     if (!on.length) { callOut.innerHTML = ''; return; }
     if (!stop.length) {
-      callOut.innerHTML = '<div class="verdict medium"><h3 class="verdict-title">Lägg på och ring upp själv</h3><p>Det kan vara äkta, men nummerpresentationen kan vara förfalskad, även när den visar bankens eller polisens riktiga nummer. Ring upp på ett nummer du har letat upp själv, till exempel på bankens webbplats eller på ditt kort. En riktig bank förstår det.</p></div>';
+      callOut.innerHTML = '<div class="verdict medium"><h3 class="verdict-title">Lägg på och ring upp själv</h3><p>Det kan vara äkta, men nummerpresentationen kan vara förfalskad, även när den visar bankens eller polisens riktiga nummer. Ring upp på ett nummer du har letat upp själv, till exempel på bankens webbplats eller på ditt kort. En riktig bank förstår det.</p>' + speakButton() + '</div>';
       return;
     }
     callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det här är precis så bedragare arbetar. En riktig bank, polis eller myndighet ber dig aldrig om det här.</p><ul>' +
       stop.map(function (k) { return '<li>' + esc(TIPS[k]) + '</li>'; }).join('') +
-      '</ul><p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p></div>';
+      '</ul><p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' + speakButton() + '</div>';
   }
   $$('#panel-samtal input').forEach(function (i) { i.addEventListener('change', updateCall); });
   callReset.addEventListener('click', function () {
     $$('#panel-samtal input').forEach(function (i) { i.checked = false; });
     updateCall();
+  });
+
+  /* Kopiera, med reserv när urklipp inte går att använda */
+  function copy(text, field, ok, statusEl) {
+    function fallback() {
+      if (field) {
+        field.focus();
+        field.select();
+        try { field.setSelectionRange(0, field.value.length); } catch (e) {}
+        statusEl.textContent = 'Texten är markerad. Kopiera den med Ctrl+C, eller håll fingret på den och välj Kopiera.';
+      } else {
+        statusEl.textContent = 'Markera och kopiera texten: ' + text;
+      }
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { statusEl.textContent = ok; }, fallback);
+      } else fallback();
+    } catch (e) { fallback(); }
+  }
+
+  /* Testa dig själv */
+  var QUIZ = [
+    { from: 'Sms', text: 'Tullverket: Din försändelse har stoppats i tullen. Betala avgiften 29 kr idag för att undvika retur: https://tull-avgift.example', answer: 'bluff',
+      why: 'Liten avgift, bråttom och en okänd adress. Myndigheter tar inte betalt via länkar i sms.' },
+    { from: 'Sms', text: 'Påminnelse: Din tid hos tandläkaren är tisdag 14 maj kl. 09.30. Välkommen! Behöver du avboka, ring kliniken.', answer: 'akta',
+      why: 'En vanlig påminnelse. Ingen länk, inga koder och inget krav på pengar.' },
+    { from: 'Sms från ett okänt nummer', text: 'Hej pappa, det är jag. Mobilen gick sönder så jag lånar en kompis telefon. Kan du swisha 3 000 kr? Förklarar sen ❤️', answer: 'bluff',
+      why: 'Så låter ”Hej mamma”-bluffen: ny telefon och pengar på en gång. Ring ditt barn på det vanliga numret.' },
+    { from: 'Sms', text: 'Din kod för inloggning är 482917. Ange den bara på sidan du själv öppnade. Dela aldrig koden med någon.', answer: 'akta',
+      why: 'Ett sådant sms kommer när du själv loggar in. Har du inte försökt logga in, strunta i det och ge aldrig koden till någon.' },
+    { from: 'Sms', text: 'Skatteverket: Du har en återbetalning på 1 846 kr. Ange dina kortuppgifter för utbetalning: skatteverket-se.example', answer: 'bluff',
+      why: 'Skatteverket frågar aldrig efter kortuppgifter i sms, och adressen är inte skatteverket.se.' },
+    { from: 'Telefonsamtal', text: '”Hej, det här är bankens säkerhetsavdelning. Vi ser misstänkta köp på ditt kort. Logga in med BankID så stoppar vi dem.”', answer: 'bluff',
+      why: 'Banken ber dig aldrig använda BankID i telefon. Lägg på och ring bankens nummer själv.' },
+    { from: 'Avisering i Swish-appen', text: 'Du har fått 250 kr från Anna Berg. Meddelande: Tack för lånet!', answer: 'akta',
+      why: 'Pengar som kommer in kräver ingenting av dig. Du behöver inte godkänna något.' },
+    { from: 'Sms', text: 'Grattis! Du är utvald att testa en ny mobiltelefon för 19 kr. Svara inom 1 timme: tiny.example/3kTx9q', answer: 'bluff',
+      why: 'Vinst, liten avgift, bråttom och en okänd länk. Fyra varningstecken på en gång.' },
+    { from: 'Avisering i Blocket-appen', text: 'Någon har skickat ett meddelande om din annons ”Soffa”. Läs det i appen.', answer: 'akta',
+      why: 'Ett vanligt besked i appen. Ingen länk att logga in via och inget krav på BankID eller betalning.' },
+    { from: 'Någon ringer på dörren', text: 'En man i uniform säger att han är polis. Han vill ta med sig ditt bankkort och dina smycken för att skydda dem från ett gäng.', answer: 'bluff',
+      why: 'Polisen hämtar aldrig kort, pengar eller smycken. Stäng dörren och ring 112.' }
+  ];
+  var quiz = $('#quiz'), qi = 0, qScore = 0;
+  function quizQuestion(focus) {
+    var q = QUIZ[qi];
+    quiz.innerHTML = '<p class="quiz-count" tabindex="-1">' + (qi + 1) + ' av ' + QUIZ.length + '</p>' +
+      '<div class="quiz-msg"><p class="quiz-from">' + esc(q.from) + '</p><p class="quiz-text">' + esc(q.text) + '</p></div>' +
+      '<div class="actions"><button class="btn btn-alt" type="button" data-answer="bluff">Det är bluff</button>' +
+      '<button class="btn btn-alt" type="button" data-answer="akta">Det är äkta</button></div>' +
+      '<div class="quiz-after" aria-live="polite"></div>';
+    if (focus) $('.quiz-count', quiz).focus();
+  }
+  function quizEnd() {
+    var comment = qScore >= 9 ? 'Mycket bra. Du känner igen nästan alla knep.'
+      : qScore >= 7 ? 'Bra. Läs igenom lappen ovan, så blir det ännu lättare.'
+      : 'Bra att du testade. Läs lappen ovan och prova igen.';
+    quiz.innerHTML = '<p class="quiz-score" tabindex="-1">Du fick ' + qScore + ' av ' + QUIZ.length + ' rätt.</p><p class="quiz-comment">' + comment + '</p>' +
+      '<div class="actions"><button class="btn" type="button" data-copyscore>Kopiera resultatet</button>' +
+      '<button class="linkbtn" type="button" data-restart>Gör om testet</button></div><p class="copystatus" id="quiz-status" role="status"></p>';
+    $('.quiz-score', quiz).focus();
+  }
+  quiz.addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('button') : null;
+    if (!t) return;
+    if (t.hasAttribute('data-answer')) {
+      var q = QUIZ[qi], right = t.getAttribute('data-answer') === q.answer;
+      if (right) qScore++;
+      $$('[data-answer]', quiz).forEach(function (b) { b.disabled = true; b.setAttribute('aria-pressed', b === t ? 'true' : 'false'); });
+      $('.quiz-after', quiz).innerHTML = '<div class="quiz-feedback ' + (right ? 'right' : 'wrong') + '"><h3>' + (right ? 'Rätt.' : 'Inte riktigt.') + ' ' +
+        (q.answer === 'bluff' ? 'Det här är en bluff.' : 'Det här är äkta.') + '</h3><p>' + esc(q.why) + '</p></div>' +
+        '<div class="actions"><button class="btn" type="button" data-next>' + (qi + 1 < QUIZ.length ? 'Nästa' : 'Se resultatet') + '</button></div>';
+      $('[data-next]', quiz).focus();
+    } else if (t.hasAttribute('data-next')) {
+      qi++;
+      if (qi < QUIZ.length) quizQuestion(true); else quizEnd();
+    } else if (t.hasAttribute('data-restart')) {
+      qi = 0; qScore = 0; quizQuestion(true);
+    } else if (t.hasAttribute('data-copyscore')) {
+      copy('Jag fick ' + qScore + ' av ' + QUIZ.length + ' rätt på bluff-testet. Klarar du det? ' + SHARE_URL + '#testa', null, 'Resultatet är kopierat. Klistra in det där du vill dela det.', $('#quiz-status'));
+    }
   });
 
   /* Dela */
@@ -695,25 +926,13 @@ var Bluffkoll = (function () {
   shareMsg.value = shareText;
   if (hasUrl) shareLink.value = SHARE_URL;
   else { $('#linkline').hidden = true; $('#copylink').hidden = true; }
-  function copy(text, field, ok) {
-    function fallback() {
-      field.focus();
-      field.select();
-      try { field.setSelectionRange(0, field.value.length); } catch (e) {}
-      status.textContent = 'Texten är markerad. Kopiera den med Ctrl+C, eller håll fingret på den och välj Kopiera.';
-    }
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(function () { status.textContent = ok; }, fallback);
-      } else fallback();
-    } catch (e) { fallback(); }
-  }
-  $('#copymsg').addEventListener('click', function () { copy(shareText, shareMsg, 'Meddelandet är kopierat. Klistra in det i ett sms, ett mejl eller en chatt.'); });
-  $('#copylink').addEventListener('click', function () { copy(SHARE_URL, shareLink, 'Länken är kopierad.'); });
+  $('#copymsg').addEventListener('click', function () { copy(shareText, shareMsg, 'Meddelandet är kopierat. Klistra in det i ett sms, ett mejl eller en chatt.', status); });
+  $('#copylink').addEventListener('click', function () { copy(SHARE_URL, shareLink, 'Länken är kopierad.', status); });
 
   /* Start */
   var hash = (location.hash || '').replace('#', '');
   if (TABS.indexOf(hash) !== -1) selectTab(hash);
   setExample('paket', false);
   updateCall();
+  quizQuestion(false);
 })();

@@ -7,6 +7,15 @@
 <meta property="og:description" content="Kolla om ett sms, mejl eller samtal är ett bedrägeri. Gratis och på svenska.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="sv_SE">
+<meta property="og:url" content="https://tollegoransson-maker.github.io/ar-det-bluff/">
+<meta property="og:image" content="https://tollegoransson-maker.github.io/ar-det-bluff/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Är det bluff? Lägg på om någon ber dig använda BankID i telefon.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%23B4142B%27/%3E%3Cpath d=%27M28 13h8v26h-8zM28 45h8v8h-8z%27 fill=%27%23fff%27/%3E%3C/svg%3E">
 <style>:root{color-scheme:light}[hidden]{display:none!important}</style>
 <title>Är det bluff?</title>
@@ -81,7 +90,7 @@ h1, h2, h3, h4 { text-wrap: balance; }
 
 /* Sidhuvud */
 .site-head { border-bottom: 1px solid var(--line); }
-.head-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; }
+.head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; min-height: 64px; padding-block: 10px; }
 .wordmark { font-family: var(--font-head); font-weight: 700; font-size: 1.3rem; letter-spacing: -0.005em; color: var(--ink); text-decoration: none; }
 .wordmark:hover { color: var(--ink); }
 .head-link { font-weight: 600; }
@@ -225,6 +234,37 @@ h2 {
 .linkline { margin-top: 20px; }
 .share-more { margin: 28px 0 0; max-width: 38em; }
 
+/* Större text, uppläsning och skärmbild */
+html.big { font-size: 118.75%; }
+.head-tools { display: flex; align-items: center; gap: 22px; }
+.head-tools .linkbtn { font-weight: 600; }
+.head-tools { margin-left: auto; }
+.wordmark, .head-tools .linkbtn, .head-tools a { white-space: nowrap; }
+.speak { margin-top: 14px; }
+.verdict .panel-link { color: inherit; font-weight: 700; }
+.ocr-line { margin: -4px 0 12px; color: var(--ink-2); font-size: 1.0625rem; }
+.ocr-status { margin: 0 0 12px; font-weight: 600; }
+.ocr-status:empty { display: none; }
+
+/* Testa dig själv */
+.quiz { max-width: 38em; }
+.quiz-count { margin: 0 0 10px; color: var(--ink-2); font-size: 1rem; font-weight: 600; }
+.quiz-msg { padding: 16px 18px; border-radius: 3px; background: var(--surface); }
+.quiz-from { margin: 0 0 6px; color: var(--ink-2); font-size: 1rem; }
+.quiz-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.btn-alt { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.btn-alt:hover { background: var(--surface); }
+.btn-alt[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.btn[disabled] { cursor: default; }
+.btn-alt[disabled]:not([aria-pressed="true"]) { opacity: 0.45; }
+.quiz-feedback { margin-top: 18px; padding: 18px 20px; border-radius: 3px; }
+.quiz-feedback.right { background: var(--calm-bg); color: var(--calm-ink); }
+.quiz-feedback.wrong { background: var(--caution-bg); color: var(--caution-ink); }
+.quiz-feedback h3 { margin: 0 0 6px; font-family: var(--font-head); font-weight: 700; font-size: 1.4rem; line-height: 1.2; }
+.quiz-feedback p { margin: 0; }
+.quiz-score { margin: 0 0 8px; font-family: var(--font-head); font-weight: 700; font-size: 2rem; font-size: clamp(1.8rem, 5vw, 2.4rem); line-height: 1.1; }
+.quiz-comment { margin: 0; }
+
 /* Sidfot */
 .site-foot { padding-block: 44px 64px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 1rem; }
 .foot-grid { display: grid; gap: 32px; }
@@ -255,6 +295,17 @@ h2 {
   .verdict { padding: 18px 18px 20px; }
   .notice { padding: 20px 18px 18px; }
 }
+/* Smala skärmar och stor text: flikarna ställs under varandra så att långa ord får plats */
+@media (max-width: 420px) {
+  .tabs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .tab { margin: 0; padding: 10px 0 10px 12px; border-bottom: 0; border-left: 4px solid transparent; }
+  .tab[aria-selected="true"] { border-left-color: var(--ink); }
+}
+@media (max-width: 600px) {
+  html.big .tabs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  html.big .tab { margin: 0; padding: 10px 0 10px 12px; border-bottom: 0; border-left: 4px solid transparent; }
+  html.big .tab[aria-selected="true"] { border-left-color: var(--ink); }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -264,7 +315,10 @@ h2 {
 <header class="site-head">
   <div class="wrap head-row">
     <a class="wordmark" href="#verktyg">Är det bluff?</a>
-    <a class="head-link" href="#dela">Dela sidan</a>
+    <div class="head-tools">
+      <button class="linkbtn" id="bigtext" type="button" aria-pressed="false">Större text</button>
+      <a class="head-link" href="#dela">Dela sidan</a>
+    </div>
   </div>
 </header>
 
@@ -283,6 +337,9 @@ h2 {
       <div class="panel" role="tabpanel" id="panel-meddelande" aria-labelledby="tab-meddelande">
         <label class="label" for="msg">Klistra in meddelandet</label>
         <p class="hint" id="msg-hint">Kopiera texten från sms:et, mejlet eller chatten och klistra in den här.</p>
+        <p class="ocr-line" id="ocr" hidden>Har du bara en skärmbild? <button class="linkbtn" id="ocr-pick" type="button">Välj en skärmbild</button>, så läser vi av texten. Bilden lämnar inte din enhet.</p>
+        <input type="file" id="ocr-file" accept="image/*" hidden>
+        <p class="ocr-status" id="ocr-status" role="status"></p>
         <textarea id="msg" rows="6" spellcheck="false" autocomplete="off" aria-describedby="msg-hint"></textarea>
         <div class="actions">
           <button class="btn" id="check" type="button">Kolla meddelandet</button>
@@ -375,6 +432,14 @@ h2 {
     </div>
   </section>
 
+  <section class="section" id="testa" aria-labelledby="testa-h">
+    <div class="wrap">
+      <h2 id="testa-h">Testa dig själv</h2>
+      <p class="intro">Tio påhittade meddelanden och samtal. Avgör om de är bluff eller äkta, så får du veta varför.</p>
+      <div class="quiz" id="quiz"><noscript><p>Testet behöver JavaScript.</p></noscript></div>
+    </div>
+  </section>
+
   <section class="section section-share" id="dela" aria-labelledby="dela-h">
     <div class="wrap">
       <h2 id="dela-h">Dela sidan</h2>
@@ -401,6 +466,7 @@ h2 {
       <h2>Om sidan</h2>
       <p>Är det bluff? är en fristående och gratis sida. Den är inte kopplad till någon bank, myndighet eller något företag.</p>
       <p>Analysen sker i din webbläsare. Texten du klistrar in skickas inte någonstans och sparas inte.</p>
+      <p>Sidan räknar antalet besök med GoatCounter. Den sparar bara sammanräknade siffror, inte din IP-adress eller något annat som kan kopplas till dig.</p>
       <p>Verktyget letar efter kända varningstecken och kan missa nya knep. Lita alltid på din magkänsla och kontrollera med avsändaren på ett sätt du själv väljer.</p>
     </div>
     <div>
@@ -419,5 +485,6 @@ h2 {
   </div>
 </footer>
 <script src="app.js"></script>
+<script data-goatcounter="https://kollabluffen.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
