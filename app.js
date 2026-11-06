@@ -545,6 +545,13 @@ var Bluffkoll = (function () {
     });
   }
 
+  /* Räkna användning (bara på webbversionen): endast händelsens namn skickas, aldrig det du skriver */
+  function track(name) {
+    try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: name, event: true }); } catch (e) {}
+  }
+  var counted = {};
+  function trackOnce(name) { if (!counted[name]) { counted[name] = true; track(name); } }
+
   /* Större text */
   var bigBtn = $('#bigtext');
   function setBig(on) {
@@ -552,7 +559,11 @@ var Bluffkoll = (function () {
     bigBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
     try { localStorage.setItem('bluff-big', on ? '1' : '0'); } catch (e) {}
   }
-  bigBtn.addEventListener('click', function () { setBig(bigBtn.getAttribute('aria-pressed') !== 'true'); });
+  bigBtn.addEventListener('click', function () {
+    var on = bigBtn.getAttribute('aria-pressed') !== 'true';
+    setBig(on);
+    if (on) track('storre-text');
+  });
   try { if (localStorage.getItem('bluff-big') === '1') setBig(true); } catch (e) {}
 
   /* Flikar */
@@ -560,6 +571,7 @@ var Bluffkoll = (function () {
   var tabs = $$('[role="tab"]');
   function selectTab(name, focus) {
     if (TABS.indexOf(name) === -1) return;
+    if (name === 'lurad') trackOnce('lurad-oppnad');
     tabs.forEach(function (t) {
       var on = t.id === 'tab-' + name;
       t.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -614,6 +626,7 @@ var Bluffkoll = (function () {
     u.onerror = resetSpeak;
     b.textContent = 'Sluta läsa';
     synth.speak(u);
+    track('las-upp');
   });
 
   /* Meddelanden */
@@ -669,7 +682,7 @@ var Bluffkoll = (function () {
     return html + esc(text.slice(pos));
   }
 
-  function render(r, text) {
+  function render(r, text, asked) {
     if (r.level === 'empty') { renderEmpty(); return; }
     var V = VERDICT[r.level], h = '';
     if (exKey) {
@@ -695,6 +708,9 @@ var Bluffkoll = (function () {
     } else {
       h += '<p class="none">Vi hittade inga av de vanligaste varningstecknen.</p>';
     }
+    if (asked && !exKey && window.goatcounter) {
+      h += '<p class="helpful" id="helpful">Hjälpte svaret dig? <button class="linkbtn" type="button" data-helpful="ja">Ja</button> eller <button class="linkbtn" type="button" data-helpful="nej">Nej</button></p>';
+    }
     out.innerHTML = h;
   }
 
@@ -702,9 +718,13 @@ var Bluffkoll = (function () {
     out.innerHTML = '<p class="empty">Klistra in ett meddelande i rutan så får du svar direkt.</p>';
   }
 
+  var LEVEL_EVENT = { high: 'kollat-troligen-bluff', medium: 'kollat-var-forsiktig', low: 'kollat-inga-tecken' }, lastCounted = '';
   function run(scroll) {
     if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-    render(Bluffkoll.analyze(msg.value), msg.value);
+    var r = Bluffkoll.analyze(msg.value);
+    render(r, msg.value, scroll);
+    // Ett eget meddelande räknas en gång, med svaret det fick. Exempel och text under skrivning räknas inte.
+    if (scroll && !exKey && r.level !== 'empty' && msg.value !== lastCounted) { lastCounted = msg.value; track(LEVEL_EVENT[r.level]); }
     if (scroll) {
       var v = $('#verdict');
       if (v && v.scrollIntoView) v.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
@@ -727,6 +747,13 @@ var Bluffkoll = (function () {
   });
   msg.addEventListener('paste', function () { setTimeout(function () { exKey = null; markExamples(); run(true); }, 0); });
   $('#check').addEventListener('click', function () { clearTimeout(timer); run(true); });
+  out.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-helpful]') : null;
+    if (!b) return;
+    track('hjalpte-' + b.getAttribute('data-helpful'));
+    var p = $('#helpful');
+    if (p) p.textContent = 'Tack för att du svarade.';
+  });
   $('#clear').addEventListener('click', function () {
     msg.value = ''; exKey = null; markExamples(); renderEmpty(); ocrStatus.textContent = ''; msg.focus();
   });
@@ -791,8 +818,10 @@ var Bluffkoll = (function () {
       markExamples();
       run(true);
       ocrStatus.textContent = 'Texten är avläst från bilden. Rätta den i rutan om något blev fel.';
+      track('skarmbild-last');
     }).catch(function () {
       ocrStatus.textContent = 'Det gick inte att läsa bilden. Kontrollera internetanslutningen, eller skriv av meddelandet.';
+      track('skarmbild-fel');
     });
   }
   if (CAN_OCR) {
@@ -823,9 +852,11 @@ var Bluffkoll = (function () {
     if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     if (!on.length) { callOut.innerHTML = ''; return; }
     if (!stop.length) {
+      trackOnce('samtal-ring-upp-sjalv');
       callOut.innerHTML = '<div class="verdict medium"><h3 class="verdict-title">Lägg på och ring upp själv</h3><p>Det kan vara äkta, men nummerpresentationen kan vara förfalskad, även när den visar bankens eller polisens riktiga nummer. Ring upp på ett nummer du har letat upp själv, till exempel på bankens webbplats eller på ditt kort. En riktig bank förstår det.</p>' + speakButton() + '</div>';
       return;
     }
+    trackOnce('samtal-lagg-pa');
     callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det här är precis så bedragare arbetar. En riktig bank, polis eller myndighet ber dig aldrig om det här.</p><ul>' +
       stop.map(function (k) { return '<li>' + esc(TIPS[k]) + '</li>'; }).join('') +
       '</ul><p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' + speakButton() + '</div>';
@@ -896,6 +927,7 @@ var Bluffkoll = (function () {
       '<div class="actions"><button class="btn" type="button" data-copyscore>Kopiera resultatet</button>' +
       '<button class="linkbtn" type="button" data-restart>Gör om testet</button></div><p class="copystatus" id="quiz-status" role="status"></p>';
     $('.quiz-score', quiz).focus();
+    track('testet-' + qScore + '-av-' + QUIZ.length);
   }
   quiz.addEventListener('click', function (e) {
     var t = e.target.closest ? e.target.closest('button') : null;
@@ -914,6 +946,7 @@ var Bluffkoll = (function () {
     } else if (t.hasAttribute('data-restart')) {
       qi = 0; qScore = 0; quizQuestion(true);
     } else if (t.hasAttribute('data-copyscore')) {
+      track('testet-delat');
       copy('Jag fick ' + qScore + ' av ' + QUIZ.length + ' rätt på bluff-testet. Klarar du det? ' + SHARE_URL + '#testa', null, 'Resultatet är kopierat. Klistra in det där du vill dela det.', $('#quiz-status'));
     }
   });
@@ -926,8 +959,8 @@ var Bluffkoll = (function () {
   shareMsg.value = shareText;
   if (hasUrl) shareLink.value = SHARE_URL;
   else { $('#linkline').hidden = true; $('#copylink').hidden = true; }
-  $('#copymsg').addEventListener('click', function () { copy(shareText, shareMsg, 'Meddelandet är kopierat. Klistra in det i ett sms, ett mejl eller en chatt.', status); });
-  $('#copylink').addEventListener('click', function () { copy(SHARE_URL, shareLink, 'Länken är kopierad.', status); });
+  $('#copymsg').addEventListener('click', function () { track('delat-meddelande'); copy(shareText, shareMsg, 'Meddelandet är kopierat. Klistra in det i ett sms, ett mejl eller en chatt.', status); });
+  $('#copylink').addEventListener('click', function () { track('delat-lank'); copy(SHARE_URL, shareLink, 'Länken är kopierad.', status); });
 
   /* Start */
   var hash = (location.hash || '').replace('#', '');
