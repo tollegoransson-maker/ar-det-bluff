@@ -545,6 +545,12 @@ var Bluffkoll = (function () {
     });
   }
 
+  // Håller ihop belopp och tal med sin enhet i text som bara visas, så att "4 800 kr" inte bryts mitt itu.
+  // Texter som analyseras lämnas orörda, eftersom analysen läser vanliga mellanslag.
+  function keep(s) {
+    return s.replace(/(\d) (?=\d{3}(?!\d))/g, '$1 ').replace(/(\d) (?=(?:kr|kronor|timmar|timme|minuter|dagar|månader)(?![\p{L}]))/gu, '$1 ');
+  }
+
   /* Räkna användning (bara på webbversionen): endast händelsens namn skickas, aldrig det du skriver */
   function track(name) {
     try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: name, event: true }); } catch (e) {}
@@ -913,7 +919,7 @@ var Bluffkoll = (function () {
   function quizQuestion(focus) {
     var q = QUIZ[qi];
     quiz.innerHTML = '<p class="quiz-count" tabindex="-1">' + (qi + 1) + ' av ' + QUIZ.length + '</p>' +
-      '<div class="quiz-msg"><p class="quiz-from">' + esc(q.from) + '</p><p class="quiz-text">' + esc(q.text) + '</p></div>' +
+      '<div class="quiz-msg"><p class="quiz-from">' + esc(q.from) + '</p><p class="quiz-text">' + keep(esc(q.text)) + '</p></div>' +
       '<div class="actions"><button class="btn btn-alt" type="button" data-answer="bluff">Det är bluff</button>' +
       '<button class="btn btn-alt" type="button" data-answer="akta">Det är äkta</button></div>' +
       '<div class="quiz-after" aria-live="polite"></div>';
@@ -937,7 +943,7 @@ var Bluffkoll = (function () {
       if (right) qScore++;
       $$('[data-answer]', quiz).forEach(function (b) { b.disabled = true; b.setAttribute('aria-pressed', b === t ? 'true' : 'false'); });
       $('.quiz-after', quiz).innerHTML = '<div class="quiz-feedback ' + (right ? 'right' : 'wrong') + '"><h3>' + (right ? 'Rätt.' : 'Inte riktigt.') + ' ' +
-        (q.answer === 'bluff' ? 'Det här är en bluff.' : 'Det här är äkta.') + '</h3><p>' + esc(q.why) + '</p></div>' +
+        (q.answer === 'bluff' ? 'Det här är en bluff.' : 'Det här är äkta.') + '</h3><p>' + keep(esc(q.why)) + '</p></div>' +
         '<div class="actions"><button class="btn" type="button" data-next>' + (qi + 1 < QUIZ.length ? 'Nästa' : 'Se resultatet') + '</button></div>';
       $('[data-next]', quiz).focus();
     } else if (t.hasAttribute('data-next')) {

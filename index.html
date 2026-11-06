@@ -79,6 +79,7 @@ a { color: var(--accent); text-underline-offset: 3px; }
 a:hover { color: var(--accent-hover); text-decoration-thickness: 2px; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 h1, h2, h3, h4 { text-wrap: balance; }
+p, li, td { text-wrap: pretty; }
 .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .wrap {
   max-width: 44rem;
@@ -93,6 +94,10 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; min-height: 64px; padding-block: 10px; }
 .wordmark { font-family: var(--font-head); font-weight: 700; font-size: 1.3rem; letter-spacing: -0.005em; color: var(--ink); text-decoration: none; }
 .wordmark:hover { color: var(--ink); }
+.wordmark { display: inline-flex; align-items: center; gap: 10px; }
+.mark { width: 1.3em; height: 1.3em; flex: none; }
+.mark-bg { fill: var(--danger); }
+.mark-fg { fill: var(--on-danger); }
 .head-link { font-weight: 600; }
 
 /* Inledning och verktyg */
@@ -242,8 +247,8 @@ html.big { font-size: 118.75%; }
 .wordmark, .head-tools .linkbtn, .head-tools a { white-space: nowrap; }
 .speak { margin-top: 14px; }
 .verdict .panel-link { color: inherit; font-weight: 700; }
-.ocr-line { margin: -4px 0 12px; color: var(--ink-2); font-size: 1.0625rem; }
-.ocr-status { margin: 0 0 12px; font-weight: 600; }
+.ocr-line { margin: 18px 0 0; color: var(--ink-2); font-size: 1.0625rem; }
+.ocr-status { margin: 10px 0 0; font-weight: 600; }
 .ocr-status:empty { display: none; }
 .helpful { margin: 24px 0 0; color: var(--ink-2); }
 
@@ -289,10 +294,13 @@ html.big { font-size: 118.75%; }
   .scams td::before { content: attr(data-label); display: block; color: var(--ink-2); font-size: 0.95rem; font-style: normal; font-weight: 600; }
 }
 @media (max-width: 600px) {
-  .hero { padding-block: 36px 56px; }
+  .hero { padding-block: 24px 56px; }
+  h1 { font-size: 1.95rem; margin-bottom: 10px; }
+  .lead { font-size: 1.125rem; }
   .section { padding-block: 48px; }
-  .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 36px; }
+  .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 24px; }
   .tab { font-size: 1rem; }
+  .panel { padding-top: 22px; }
   .verdict { padding: 18px 18px 20px; }
   .notice { padding: 20px 18px 18px; }
 }
@@ -315,7 +323,7 @@ html.big { font-size: 118.75%; }
 <body>
 <header class="site-head">
   <div class="wrap head-row">
-    <a class="wordmark" href="#verktyg">Är det bluff?</a>
+    <a class="wordmark" href="#verktyg"><svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><rect class="mark-bg" width="100" height="100" rx="16"/><rect class="mark-fg" x="43" y="17" width="14" height="46" rx="4"/><circle class="mark-fg" cx="50" cy="76" r="8"/></svg>Är det bluff?</a>
     <div class="head-tools">
       <button class="linkbtn" id="bigtext" type="button" aria-pressed="false">Större text</button>
       <a class="head-link" href="#dela">Dela sidan</a>
@@ -338,14 +346,14 @@ html.big { font-size: 118.75%; }
       <div class="panel" role="tabpanel" id="panel-meddelande" aria-labelledby="tab-meddelande">
         <label class="label" for="msg">Klistra in meddelandet</label>
         <p class="hint" id="msg-hint">Kopiera texten från sms:et, mejlet eller chatten och klistra in den här.</p>
-        <p class="ocr-line" id="ocr" hidden>Har du bara en skärmbild? <button class="linkbtn" id="ocr-pick" type="button">Välj en skärmbild</button>, så läser vi av texten. Bilden lämnar inte din enhet.</p>
-        <input type="file" id="ocr-file" accept="image/*" hidden>
-        <p class="ocr-status" id="ocr-status" role="status"></p>
         <textarea id="msg" rows="6" spellcheck="false" autocomplete="off" aria-describedby="msg-hint"></textarea>
         <div class="actions">
           <button class="btn" id="check" type="button">Kolla meddelandet</button>
           <button class="linkbtn" id="clear" type="button">Töm rutan</button>
         </div>
+        <p class="ocr-line" id="ocr" hidden>Har du bara en skärmbild? <button class="linkbtn" id="ocr-pick" type="button">Välj en skärmbild</button>, så läser vi av texten. Bilden lämnar inte din enhet.</p>
+        <input type="file" id="ocr-file" accept="image/*" hidden>
+        <p class="ocr-status" id="ocr-status" role="status"></p>
         <p class="examples">Inget eget meddelande till hands? Prova ett påhittat exempel:
           <button class="linkbtn" type="button" data-ex="paket" aria-pressed="false">paket-sms</button>,
           <button class="linkbtn" type="button" data-ex="mamma" aria-pressed="false">”Hej mamma”</button>,
@@ -379,13 +387,13 @@ html.big { font-size: 118.75%; }
         <p class="panel-intro"><strong>Agera direkt.</strong> Ju snabbare du ringer banken, desto större är chansen att stoppa pengarna. Du har inget att skämmas för.</p>
         <ol class="steps">
           <li><div><h3>Ring din bank direkt</h3><p>Be dem spärra kort, BankID och internetbank och stoppa betalningar som inte har gått iväg än. Bankerna har spärrtjänst dygnet runt. Numret finns på bankens webbplats och ofta på baksidan av ditt kort. Använd aldrig ett nummer som bedragaren har gett dig.</p></div></li>
-          <li><div><h3>Polisanmäl</h3><p>Ring <a class="num" href="tel:11414">114 14</a> eller anmäl på polisen.se. Pågår brottet just nu, eller är någon på väg hem till dig? Ring <a class="num" href="tel:112">112</a>. Spara sms, mejl, telefonnummer och kontonummer som bevis.</p></div></li>
-          <li><div><h3>Begär pengarna tillbaka</h3><p>Anmäl skriftligt till banken och begär ersättning, inom 13 månader. Efter en dom i Högsta domstolen kan du ha rätt till ersättning även om du själv loggade in med BankID, och det är banken som måste visa att du ska stå för förlusten. Konsumentverket har färdiga mallar. Säger banken nej kan du vända dig till Allmänna reklamationsnämnden (ARN).</p></div></li>
+          <li><div><h3>Polisanmäl</h3><p>Ring <a class="num" href="tel:11414">114&nbsp;14</a> eller anmäl på polisen.se. Pågår brottet just nu, eller är någon på väg hem till dig? Ring <a class="num" href="tel:112">112</a>. Spara sms, mejl, telefonnummer och kontonummer som bevis.</p></div></li>
+          <li><div><h3>Begär pengarna tillbaka</h3><p>Anmäl skriftligt till banken och begär ersättning, inom 13&nbsp;månader. Efter en dom i Högsta domstolen kan du ha rätt till ersättning även om du själv loggade in med BankID, och det är banken som måste visa att du ska stå för förlusten. Konsumentverket har färdiga mallar. Säger banken nej kan du vända dig till Allmänna reklamationsnämnden (ARN).</p></div></li>
           <li><div><h3>Har du lämnat ut personnummer, BankID eller id-kort?</h3><p>Lägg en bedrägerispärr hos ett kreditupplysningsföretag, till exempel UC. Spärren gäller då hos alla de stora kreditupplysningsföretagen och gör det svårare att ta lån i ditt namn.</p></div></li>
           <li><div><h3>Har du lämnat ut ett lösenord?</h3><p>Byt det direkt, och börja med din e-post. Använd olika lösenord för olika tjänster.</p></div></li>
           <li><div><h3>Har någon styrt din dator eller telefon?</h3><p>Koppla bort internet och avinstallera appen. Låt någon du litar på gå igenom enheten innan du loggar in på banken igen.</p></div></li>
           <li><div><h3>Se upp för nästa bluff</h3><p>Efter ett bedrägeri hör ofta någon av sig och lovar att få tillbaka pengarna mot en avgift. Det är en ny bluff. Ingen myndighet ringer och erbjuder sådan hjälp mot betalning.</p></div></li>
-          <li><div><h3>Prata med någon</h3><p>Bedragarna är proffs, och det kan hända vem som helst. Brottsofferjouren ger gratis stöd på <a class="num" href="tel:116006">116 006</a>.</p></div></li>
+          <li><div><h3>Prata med någon</h3><p>Bedragarna är proffs, och det kan hända vem som helst. Brottsofferjouren ger gratis stöd på <a class="num" href="tel:116006">116&nbsp;006</a>.</p></div></li>
         </ol>
       </div>
     </div>
@@ -422,12 +430,12 @@ html.big { font-size: 118.75%; }
         <tbody>
           <tr><th scope="row">Falska banken</th><td class="say" data-label="Så kan det låta">”Jag ringer från bankens säkerhetsavdelning. Du måste legitimera dig med BankID så att vi kan stoppa ett köp.”</td><td data-label="Så avslöjar du den">Banken ber dig aldrig använda BankID i telefon. Lägg på och ring bankens nummer själv.</td></tr>
           <tr><th scope="row">Falska polisen</th><td class="say" data-label="Så kan det låta">”Vi har gripit ett gäng som har dina uppgifter. En kollega kommer och hämtar ditt kort och dina smycken.”</td><td data-label="Så avslöjar du den">Polisen hämtar aldrig pengar, kort eller smycken. Öppna inte dörren och ring 112.</td></tr>
-          <tr><th scope="row">Paketbluffen</th><td class="say" data-label="Så kan det låta">”Ditt paket kunde inte levereras. Betala 19 kr i tull via länken inom 24 timmar.”</td><td data-label="Så avslöjar du den">Kolla leveransen i fraktbolagets egen app. Betala aldrig via en länk i ett sms.</td></tr>
-          <tr><th scope="row">”Hej mamma”</th><td class="say" data-label="Så kan det låta">”Hej mamma, jag har tappat telefonen och har ett nytt nummer. Kan du swisha 4 800 kr?”</td><td data-label="Så avslöjar du den">Ring ditt barn på det gamla numret, eller ställ en fråga som bara hen kan svara på.</td></tr>
-          <tr><th scope="row">Skatteåterbäringen</th><td class="say" data-label="Så kan det låta">”Du har 2 341 kr i skatteåterbäring. Fyll i dina kortuppgifter för att få pengarna.”</td><td data-label="Så avslöjar du den">Skatteverket frågar aldrig efter kontouppgifter i sms eller mejl, bara i sina e-tjänster.</td></tr>
+          <tr><th scope="row">Paketbluffen</th><td class="say" data-label="Så kan det låta">”Ditt paket kunde inte levereras. Betala 19&nbsp;kr i tull via länken inom 24&nbsp;timmar.”</td><td data-label="Så avslöjar du den">Kolla leveransen i fraktbolagets egen app. Betala aldrig via en länk i ett sms.</td></tr>
+          <tr><th scope="row">”Hej mamma”</th><td class="say" data-label="Så kan det låta">”Hej mamma, jag har tappat telefonen och har ett nytt nummer. Kan du swisha 4&nbsp;800&nbsp;kr?”</td><td data-label="Så avslöjar du den">Ring ditt barn på det gamla numret, eller ställ en fråga som bara hen kan svara på.</td></tr>
+          <tr><th scope="row">Skatteåterbäringen</th><td class="say" data-label="Så kan det låta">”Du har 2&nbsp;341&nbsp;kr i skatteåterbäring. Fyll i dina kortuppgifter för att få pengarna.”</td><td data-label="Så avslöjar du den">Skatteverket frågar aldrig efter kontouppgifter i sms eller mejl, bara i sina e-tjänster.</td></tr>
           <tr><th scope="row">Köparen som ”betalar”</th><td class="say" data-label="Så kan det låta">”Jag köper din soffa! Godkänn bara med BankID så får du pengarna direkt.”</td><td data-label="Så avslöjar du den">Du behöver aldrig BankID eller kortuppgifter för att ta emot pengar. Det du godkänner är en betalning från dig.</td></tr>
-          <tr><th scope="row">Investeringsbluffen</th><td class="say" data-label="Så kan det låta">”Känd svensk avslöjar hur hon blev rik på AI-trading. Investera 2 500 kr idag.”</td><td data-label="Så avslöjar du den">Kändisar gör inte reklam för snabba pengar, och garanterad avkastning finns inte.</td></tr>
-          <tr><th scope="row">Kärleksbluffen</th><td class="say" data-label="Så kan det låta">”Älskling, jag sitter fast i tullen och behöver 15 000 kr för att komma hem till dig.”</td><td data-label="Så avslöjar du den">Skicka aldrig pengar till någon du bara har träffat på nätet, hur äkta känslorna än verkar.</td></tr>
+          <tr><th scope="row">Investeringsbluffen</th><td class="say" data-label="Så kan det låta">”Känd svensk avslöjar hur hon blev rik på AI-trading. Investera 2&nbsp;500&nbsp;kr idag.”</td><td data-label="Så avslöjar du den">Kändisar gör inte reklam för snabba pengar, och garanterad avkastning finns inte.</td></tr>
+          <tr><th scope="row">Kärleksbluffen</th><td class="say" data-label="Så kan det låta">”Älskling, jag sitter fast i tullen och behöver 15&nbsp;000&nbsp;kr för att komma hem till dig.”</td><td data-label="Så avslöjar du den">Skicka aldrig pengar till någon du bara har träffat på nätet, hur äkta känslorna än verkar.</td></tr>
         </tbody>
       </table>
     </div>
@@ -479,7 +487,7 @@ html.big { font-size: 118.75%; }
         <li><a href="https://www.konsumentverket.se/konsumentratt/bankbedragerier-och-kortbedragerier/" target="_blank" rel="noopener">Konsumentverket: Bank- och kortbedrägerier</a></li>
         <li><a href="https://www.fi.se/sv/publicerat/nyheter/2021/se-upp-for-bedragare-som-lovar-pengarna-tillbaka/" target="_blank" rel="noopener">Finansinspektionen: Bedragare som lovar pengarna tillbaka</a></li>
         <li><a href="https://www.minuc.se/bedragerisparr" target="_blank" rel="noopener">UC: Bedrägerispärr</a></li>
-        <li><a href="https://www.brottsofferjouren.se/" target="_blank" rel="noopener">Brottsofferjouren</a>, stödlinje 116 006</li>
+        <li><a href="https://www.brottsofferjouren.se/" target="_blank" rel="noopener">Brottsofferjouren</a>, stödlinje 116&nbsp;006</li>
       </ul>
     </div>
     <p class="updated">Senast uppdaterad november 2026.</p>
