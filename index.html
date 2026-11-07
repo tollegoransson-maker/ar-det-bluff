@@ -13,17 +13,26 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Är det bluff? Lägg på om någon ber dig använda BankID i telefon.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111315" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://tollegoransson-maker.github.io/ar-det-bluff/">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%23B4142B%27/%3E%3Cpath d=%27M28 13h8v26h-8zM28 45h8v8h-8z%27 fill=%27%23fff%27/%3E%3C/svg%3E">
 <style>:root{color-scheme:light}[hidden]{display:none!important}</style>
-<title>Är det bluff?</title>
+<title>Är det bluff? Kolla sms, mejl och samtal</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Kolla om ett sms, mejl eller samtal är ett bedrägeri. Gratis och på svenska. Texten du klistrar in stannar på din enhet.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,600;0,700;1,400&family=Newsreader:opsz,wght@6..72,600;6..72,700&display=swap">
+<link rel="preload" href="fonts/atkinson-hyperlegible-next-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/newsreader-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-next-italic-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/atkinson-hyperlegible-next-italic-latin.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/atkinson-hyperlegible-next-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:"Atkinson Hyperlegible Next";font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/atkinson-hyperlegible-next-latin.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:"Newsreader";font-style:normal;font-weight:600 700;font-display:swap;src:url(fonts/newsreader-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:"Newsreader";font-style:normal;font-weight:600 700;font-display:swap;src:url(fonts/newsreader-latin.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
 <style>
 /* Layout: en dokumentkolumn (44rem) som en tryckt konsumentguide. Varje del har sin egen form:
    verktyget, ett anslag som det i trappuppgången, en uppslagstabell och en numrerad lista.
@@ -133,6 +142,7 @@ textarea { min-height: 9.5rem; resize: vertical; }
   font-family: var(--font-body); font-weight: 600; font-size: 1.125rem; line-height: 1.2; cursor: pointer;
 }
 .btn:hover { background: var(--accent-hover); }
+.btn[hidden] { display: none; }
 .linkbtn {
   -webkit-appearance: none; appearance: none; background: none; border: 0; padding: 0; margin: 0;
   color: var(--accent); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
@@ -463,6 +473,7 @@ html.big { font-size: 118.75%; }
       <label class="label" for="sharemsg">Färdigt meddelande att skicka</label>
       <textarea id="sharemsg" rows="5" readonly></textarea>
       <div class="actions">
+        <button class="btn" id="sharenative" type="button" hidden>Skicka meddelandet</button>
         <button class="btn" id="copymsg" type="button">Kopiera meddelandet</button>
         <button class="linkbtn" id="copylink" type="button">Kopiera bara länken</button>
       </div>

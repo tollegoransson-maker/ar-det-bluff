@@ -982,16 +982,21 @@ var Bluffkoll = (function () {
     return new Promise(function (resolve, reject) {
       var img = new Image();
       img.onload = function () { resolve(img); };
-      img.onerror = reject;
+      img.onerror = function (e) { URL.revokeObjectURL(img.src); reject(e); };
       img.src = URL.createObjectURL(file);
     });
   }
+  // Stora bilder krymps. En iPhone ritar inte en canvas över ungefär 16 miljoner pixlar, utan lämnar den tom,
+  // och stora bilder tar lång tid att läsa på en äldre telefon.
+  var MAX_PIXELS = 12e6;
   // Gråskala, och mörka skärmbilder vänds till mörk text på ljus botten, som textläsaren klarar bäst.
   function prepare(img) {
-    var scale = img.naturalWidth < 1000 ? 2 : 1;
+    var w = img.naturalWidth, h = img.naturalHeight;
+    var scale = w < 1000 ? 2 : 1;
+    if (w * h * scale * scale > MAX_PIXELS) scale = Math.sqrt(MAX_PIXELS / (w * h));
     var c = document.createElement('canvas');
-    c.width = img.naturalWidth * scale;
-    c.height = img.naturalHeight * scale;
+    c.width = Math.max(1, Math.round(w * scale));
+    c.height = Math.max(1, Math.round(h * scale));
     var x = c.getContext('2d');
     x.drawImage(img, 0, 0, c.width, c.height);
     var d = x.getImageData(0, 0, c.width, c.height), p = d.data, sum = 0, i;
@@ -1005,10 +1010,13 @@ var Bluffkoll = (function () {
     return c;
   }
   function readImage(file) {
-    var canvas;
+    // Var det gick fel avgör vad vi säger: bilden, hämtningen av textläsaren eller själva läsningen.
+    var canvas, stage = 'bild';
     ocrStatus.textContent = 'Läser in bilden …';
     toImage(file).then(function (img) {
       canvas = prepare(img);
+      URL.revokeObjectURL(img.src);
+      stage = 'hamta';
       if (window.Tesseract) return null;
       ocrStatus.textContent = 'Hämtar textläsaren. Första gången kan det ta en stund …';
       return loadScript(TESSERACT);
@@ -1017,7 +1025,9 @@ var Bluffkoll = (function () {
         logger: function (m) { if (m.status === 'recognizing text') ocrStatus.textContent = 'Läser texten … ' + Math.round(m.progress * 100) + ' %'; }
       });
     }).then(function (worker) {
-      return worker.recognize(canvas).then(function (res) { worker.terminate(); return res.data.text; });
+      stage = 'las';
+      return worker.recognize(canvas).then(function (res) { worker.terminate(); return res.data.text; },
+        function (e) { worker.terminate(); throw e; });
     }).then(function (text) {
       // Pratbubblor bryter rader mitt i meningar och länkar. Lägg ihop dem igen, men behåll tomma rader.
       text = String(text || '').replace(/[ \t]+\n/g, '\n').replace(/-\n(?=\S)/g, '-').replace(/([^\n])\n(?!\n)/g, '$1 ').replace(/\n{3,}/g, '\n\n').trim();
@@ -1029,7 +1039,9 @@ var Bluffkoll = (function () {
       ocrStatus.textContent = 'Texten är avläst från bilden. Rätta den i rutan om något blev fel.';
       track('skarmbild-last');
     }).catch(function () {
-      ocrStatus.textContent = 'Det gick inte att läsa bilden. Kontrollera internetanslutningen, eller skriv av meddelandet.';
+      ocrStatus.textContent = stage === 'bild' ? 'Bilden gick inte att öppna. Ta en vanlig skärmbild och försök igen, eller skriv av meddelandet.'
+        : stage === 'hamta' ? 'Det gick inte att hämta textläsaren. Kontrollera internetanslutningen, eller skriv av meddelandet.'
+        : 'Det gick inte att läsa texten i bilden. Prova en tydligare skärmbild, eller skriv av meddelandet.';
       track('skarmbild-fel');
     });
   }
@@ -1101,6 +1113,16 @@ var Bluffkoll = (function () {
     } catch (e) { fallback(); }
   }
 
+  // Telefonens egen delningsmeny (sms, mejl, WhatsApp …) är enklast. Går den inte att öppna kopieras texten i stället.
+  var canShare = typeof navigator.share === 'function';
+  function share(text, field, ok, statusEl, done) {
+    function fallback(err) { if (!err || err.name !== 'AbortError') copy(text, field, ok, statusEl); }
+    if (!canShare) { copy(text, field, ok, statusEl); return; }
+    try {
+      navigator.share({ text: text }).then(function () { statusEl.textContent = ''; if (done) done(); }, fallback);
+    } catch (e) { fallback(e); }
+  }
+
   /* Testa dig själv */
   var QUIZ = [
     { from: 'Sms', text: 'Tullverket: Din försändelse har stoppats i tullen. Betala avgiften 29 kr idag för att undvika retur: https://tull-avgift.example', answer: 'bluff',
@@ -1139,7 +1161,7 @@ var Bluffkoll = (function () {
       : qScore >= 7 ? 'Bra. Läs igenom lappen ovan, så blir det ännu lättare.'
       : 'Bra att du testade. Läs lappen ovan och prova igen.';
     quiz.innerHTML = '<p class="quiz-score" tabindex="-1">Du fick ' + qScore + ' av ' + QUIZ.length + ' rätt.</p><p class="quiz-comment">' + comment + '</p>' +
-      '<div class="actions"><button class="btn" type="button" data-copyscore>Kopiera resultatet</button>' +
+      '<div class="actions"><button class="btn" type="button" data-copyscore>' + (canShare ? 'Dela resultatet' : 'Kopiera resultatet') + '</button>' +
       '<button class="linkbtn" type="button" data-restart>Gör om testet</button></div><p class="copystatus" id="quiz-status" role="status"></p>';
     $('.quiz-score', quiz).focus();
     track('testet-' + qScore + '-av-' + QUIZ.length);
@@ -1162,7 +1184,7 @@ var Bluffkoll = (function () {
       qi = 0; qScore = 0; quizQuestion(true);
     } else if (t.hasAttribute('data-copyscore')) {
       track('testet-delat');
-      copy('Jag fick ' + qScore + ' av ' + QUIZ.length + ' rätt på bluff-testet. Klarar du det? ' + SHARE_URL + '#testa', null, 'Resultatet är kopierat. Klistra in det där du vill dela det.', $('#quiz-status'));
+      share('Jag fick ' + qScore + ' av ' + QUIZ.length + ' rätt på bluff-testet. Klarar du det? ' + SHARE_URL + '#testa', null, 'Resultatet är kopierat. Klistra in det där du vill dela det.', $('#quiz-status'));
     }
   });
 
@@ -1174,7 +1196,10 @@ var Bluffkoll = (function () {
   shareMsg.value = shareText;
   if (hasUrl) shareLink.value = SHARE_URL;
   else { $('#linkline').hidden = true; $('#copylink').hidden = true; }
-  $('#copymsg').addEventListener('click', function () { track('delat-meddelande'); copy(shareText, shareMsg, 'Meddelandet är kopierat. Klistra in det i ett sms, ett mejl eller en chatt.', status); });
+  var copiedMsg = 'Meddelandet är kopierat. Klistra in det i ett sms, ett mejl eller en chatt.';
+  if (canShare) { $('#sharenative').hidden = false; $('#copymsg').className = 'linkbtn'; }
+  $('#sharenative').addEventListener('click', function () { share(shareText, shareMsg, copiedMsg, status, function () { track('delat-skickat'); }); });
+  $('#copymsg').addEventListener('click', function () { track('delat-meddelande'); copy(shareText, shareMsg, copiedMsg, status); });
   $('#copylink').addEventListener('click', function () { track('delat-lank'); copy(SHARE_URL, shareLink, 'Länken är kopierad.', status); });
 
   /* Start */
