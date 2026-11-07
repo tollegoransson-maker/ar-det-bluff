@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="sv">
+<head><meta charset="utf-8"></head>
+<body>
+<script>
+  // Draws the home-screen icon (white exclamation mark on the page's red) at each size and exposes the PNGs as data URLs.
+  var out = {};
+  [180, 192, 512].forEach(function (size) {
+    var c = document.createElement('canvas');
+    c.width = c.height = size;
+    var x = c.getContext('2d'), u = size / 100;
+    x.fillStyle = '#B4142B';
+    x.fillRect(0, 0, size, size);
+    x.fillStyle = '#FFFFFF';
+    var r = 4 * u, bx = 43 * u, by = 17 * u, bw = 14 * u, bh = 46 * u;
+    x.beginPath();
+    x.moveTo(bx + r, by);
+    x.arcTo(bx + bw, by, bx + bw, by + bh, r);
+    x.arcTo(bx + bw, by + bh, bx, by + bh, r);
+    x.arcTo(bx, by + bh, bx, by, r);
+    x.arcTo(bx, by, bx + bw, by, r);
+    x.closePath();
+    x.fill();
+    x.beginPath();
+    x.arc(50 * u, 76 * u, 8 * u, 0, Math.PI * 2);
+    x.fill();
+    out[size] = c.toDataURL('image/png');
+  });
+  document.body.setAttribute('data-icons', JSON.stringify(out));
+</script>
+</body>
+</html>

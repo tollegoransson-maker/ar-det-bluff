@@ -1,0 +1,5 @@
+# Text files always check out with LF, also on Windows: the build scripts in src/ expect LF.
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.woff2 binary
