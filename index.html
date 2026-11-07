@@ -23,7 +23,7 @@
 <meta name="description" content="Kolla om ett sms, mejl eller samtal är ett bedrägeri. Gratis och på svenska. Texten du klistrar in stannar på din enhet.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,600;0,700;1,400&family=Newsreader:opsz,wght@6..72,600;6..72,700&display=swap">
 <style>
 /* Layout: en dokumentkolumn (44rem) som en tryckt konsumentguide. Varje del har sin egen form:
    verktyget, ett anslag som det i trappuppgången, en uppslagstabell och en numrerad lista.
@@ -48,8 +48,9 @@
   --mark: #FFE27A;
   --mark-ink: #0E1113;
   --focus: #1F4E8C;
-  --font-head: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  /* Brödtexten är ritad för läsare med nedsatt syn, rubrikerna är en tidningsantikva. */
+  --font-head: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-body: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -141,13 +142,15 @@ textarea { min-height: 9.5rem; resize: vertical; }
 .examples { margin: 22px 0 0; max-width: 38em; color: var(--ink-2); font-size: 1.0625rem; line-height: 1.75; }
 
 /* Svar */
-.result { margin-top: 36px; }
+.result { margin-top: 28px; }
 .result:empty { display: none; }
 .example-note { margin: 0 0 12px; color: var(--ink-2); font-size: 1rem; }
 .verdict { padding: 22px 24px 24px; border-radius: 3px; background: var(--v-bg); color: var(--v-ink); }
 .verdict.high { --v-bg: var(--danger); --v-ink: var(--on-danger); }
 .verdict.medium { --v-bg: var(--caution-bg); --v-ink: var(--caution-ink); }
-.verdict.low { --v-bg: var(--calm-bg); --v-ink: var(--calm-ink); }
+/* Inga träffar är inget friande besked: neutral grå, inte lugnande blå eller grön. */
+.verdict.low { --v-bg: var(--surface); --v-ink: var(--ink); border-left: 5px solid var(--ink-2); }
+.trunc { margin: 0 0 12px; font-weight: 600; }
 .verdict-title {
   font-family: var(--font-head); font-weight: 700; font-size: 1.75rem; font-size: clamp(1.6rem, 4.6vw, 2.05rem);
   line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 8px;
@@ -186,6 +189,10 @@ textarea { min-height: 9.5rem; resize: vertical; }
 .check input::after { content: ""; width: 14px; height: 8px; border-left: 3px solid var(--bg); border-bottom: 3px solid var(--bg); transform: translateY(-2px) rotate(-45deg); opacity: 0; }
 .check input:checked { background: var(--ink); border-color: var(--ink); }
 .check input:checked::after { opacity: 1; }
+/* Rådet syns direkt under det man kryssar i, så att man inte behöver leta längst ner. */
+.check-note { display: none; margin-top: 8px; padding-left: 12px; border-left: 4px solid var(--danger); font-weight: 600; }
+.check-note.calm { border-left-color: var(--ink-2); }
+.check input:checked + span .check-note { display: block; }
 .callresult { margin-top: 28px; }
 .callresult:empty { display: none; }
 .callreset { margin: 16px 0 0; }
@@ -289,7 +296,7 @@ html.big { font-size: 118.75%; }
   .scams tbody tr { padding: 16px 0; border-top: 1px solid var(--line); }
   .scams tbody tr:last-child { border-bottom: 1px solid var(--line); }
   .scams tbody th, .scams td { padding: 0; border: 0 !important; }
-  .scams tbody th { width: auto; }
+  .scams tbody th, .scams td.say { width: auto; }
   .scams td { margin-top: 8px; }
   .scams td::before { content: attr(data-label); display: block; color: var(--ink-2); font-size: 0.95rem; font-style: normal; font-weight: 600; }
 }
@@ -351,6 +358,7 @@ html.big { font-size: 118.75%; }
           <button class="btn" id="check" type="button">Kolla meddelandet</button>
           <button class="linkbtn" id="clear" type="button">Töm rutan</button>
         </div>
+        <div class="result" id="result" aria-live="polite"></div>
         <p class="ocr-line" id="ocr" hidden>Har du bara en skärmbild? <button class="linkbtn" id="ocr-pick" type="button">Välj en skärmbild</button>, så läser vi av texten. Bilden lämnar inte din enhet.</p>
         <input type="file" id="ocr-file" accept="image/*" hidden>
         <p class="ocr-status" id="ocr-status" role="status"></p>
@@ -362,7 +370,6 @@ html.big { font-size: 118.75%; }
           eller <button class="linkbtn" type="button" data-ex="vanligt" aria-pressed="false">ett vanligt sms</button>.
         </p>
         <noscript><p>Verktyget behöver JavaScript. Reglerna längre ner på sidan gäller ändå.</p></noscript>
-        <div class="result" id="result" aria-live="polite"></div>
       </div>
 
       <div class="panel" role="tabpanel" id="panel-samtal" aria-labelledby="tab-samtal" hidden>
@@ -387,13 +394,13 @@ html.big { font-size: 118.75%; }
         <p class="panel-intro"><strong>Agera direkt.</strong> Ju snabbare du ringer banken, desto större är chansen att stoppa pengarna. Du har inget att skämmas för.</p>
         <ol class="steps">
           <li><div><h3>Ring din bank direkt</h3><p>Be dem spärra kort, BankID och internetbank och stoppa betalningar som inte har gått iväg än. Bankerna har spärrtjänst dygnet runt. Numret finns på bankens webbplats och ofta på baksidan av ditt kort. Använd aldrig ett nummer som bedragaren har gett dig.</p></div></li>
-          <li><div><h3>Polisanmäl</h3><p>Ring <a class="num" href="tel:11414">114&nbsp;14</a> eller anmäl på polisen.se. Pågår brottet just nu, eller är någon på väg hem till dig? Ring <a class="num" href="tel:112">112</a>. Spara sms, mejl, telefonnummer och kontonummer som bevis.</p></div></li>
-          <li><div><h3>Begär pengarna tillbaka</h3><p>Anmäl skriftligt till banken och begär ersättning, inom 13&nbsp;månader. Efter en dom i Högsta domstolen kan du ha rätt till ersättning även om du själv loggade in med BankID, och det är banken som måste visa att du ska stå för förlusten. Konsumentverket har färdiga mallar. Säger banken nej kan du vända dig till Allmänna reklamationsnämnden (ARN).</p></div></li>
-          <li><div><h3>Har du lämnat ut personnummer, BankID eller id-kort?</h3><p>Lägg en bedrägerispärr hos ett kreditupplysningsföretag, till exempel UC. Spärren gäller då hos alla de stora kreditupplysningsföretagen och gör det svårare att ta lån i ditt namn.</p></div></li>
+          <li><div><h3>Polisanmäl</h3><p>Ring <a class="num" href="tel:11414">114&nbsp;14</a> eller gå till en polisstation. Pågår brottet just nu, eller är någon på väg hem till dig? Ring <a class="num" href="tel:112">112</a>. Radera inget: spara sms, mejl, skärmbilder, telefonnummer och kontonummer som bevis. <a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/telefonbedrageri/" target="_blank" rel="noopener">Polisen om telefonbedrägerier</a>.</p></div></li>
+          <li><div><h3>Begär pengarna tillbaka</h3><p>Kontakta banken skriftligt så snart du kan, och senast inom 13&nbsp;månader. Har bedragaren gjort betalningar som du inte själv har godkänt, även om du loggade in med BankID åt hen, ska du oftast få tillbaka det mesta. Banken får dra högst 400&nbsp;kr i självrisk, och mer bara om du har varit grovt oaktsam. Efter en dom i Högsta domstolen är det banken som måste visa det. Har du själv gjort betalningen, till exempel en Swish till bedragaren, räknas den oftast inte som obehörig och chansen är mindre. Fråga ändå. Konsumentverket har <a href="https://www.konsumentverket.se/konsumentratt/bankbedragerier-och-kortbedragerier/" target="_blank" rel="noopener">brevmallar att skicka till banken</a>. Säger banken nej kan du anmäla till <a href="https://www.arn.se/konsument/" target="_blank" rel="noopener">Allmänna reklamationsnämnden, ARN</a>. Det kostar 150&nbsp;kr.</p></div></li>
+          <li><div><h3>Har du lämnat ut personnummer, BankID eller id-kort?</h3><p>Lägg en <a href="https://www.minuc.se/bedragerisparr" target="_blank" rel="noopener">bedrägerispärr hos UC</a> direkt. Den gör det svårare att ta lån i ditt namn och läggs också hos flera andra kreditupplysningsföretag. Spärren gäller först i två veckor. Ladda upp en kopia av polisanmälan, så förlängs den.</p></div></li>
           <li><div><h3>Har du lämnat ut ett lösenord?</h3><p>Byt det direkt, och börja med din e-post. Använd olika lösenord för olika tjänster.</p></div></li>
           <li><div><h3>Har någon styrt din dator eller telefon?</h3><p>Koppla bort internet och avinstallera appen. Låt någon du litar på gå igenom enheten innan du loggar in på banken igen.</p></div></li>
           <li><div><h3>Se upp för nästa bluff</h3><p>Efter ett bedrägeri hör ofta någon av sig och lovar att få tillbaka pengarna mot en avgift. Det är en ny bluff. Ingen myndighet ringer och erbjuder sådan hjälp mot betalning.</p></div></li>
-          <li><div><h3>Prata med någon</h3><p>Bedragarna är proffs, och det kan hända vem som helst. Brottsofferjouren ger gratis stöd på <a class="num" href="tel:116006">116&nbsp;006</a>.</p></div></li>
+          <li><div><h3>Prata med någon</h3><p>Bedragarna är proffs, och det kan hända vem som helst. <a href="https://www.brottsofferjouren.se/" target="_blank" rel="noopener">Brottsofferjouren</a> ger gratis stöd på <a class="num" href="tel:116006">116&nbsp;006</a>.</p></div></li>
         </ol>
       </div>
     </div>
