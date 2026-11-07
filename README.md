@@ -8,4 +8,4 @@ Sidan: https://tollegoransson-maker.github.io/ar-det-bluff/
 - `affisch.pdf` är en A4-affisch att skriva ut och sätta upp, till exempel i trappuppgången eller tvättstugan.
 - `fonts/` innehåller typsnitten Atkinson Hyperlegible Next och Newsreader. Båda används under SIL Open Font License 1.1, se licensfilerna i mappen. De ligger på sajten själv, så att besökarnas webbläsare inte behöver kontakta Google.
 
-Sidan är fristående och inte kopplad till någon bank, myndighet eller något företag.
+Sidan är fristående och görs av en privatperson. Den är inte kopplad till någon bank, myndighet eller något företag.
