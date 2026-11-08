@@ -9,7 +9,7 @@ Härifrån byggs sajten i roten, alltså `index.html` och `app.js`. Allt körs m
 - `ar-det-bluff.html`: hela sidan i en fil, i den version som används på claude.ai. Analysen av meddelandena, motorn, finns bara här, mellan `/*ENGINE-START*/` och `/*ENGINE-END*/`. Ändringar i motorn görs direkt i den här filen.
 - `fonts/fonts.css`: typsnittsreglerna som byggs in i `index.html`. Själva typsnittsfilerna ligger i `fonts/` i roten.
 - `bilder/`: källorna till affischen, delningsbilden och ikonerna, och en testbild för skärmbildsläsningen.
-- `regress.cjs`, `regress-cases.cjs`, `test-engine.cjs` och `verify.cjs`: testerna.
+- `regress.cjs`, `regress-cases.cjs`, `regress-extra.cjs`, `test-engine.cjs` och `verify.cjs`: testerna.
 
 ## Bygga
 
@@ -31,9 +31,9 @@ node src/test-engine.cjs src/ar-det-bluff.html
 node src/verify.cjs src
 ```
 
-- `regress.cjs` gör 119 kontroller. De flesta är realistiska bluffar och äkta meddelanden från en granskning, och vart och ett måste få rätt svar. Den mäter också att analysen går snabbt. Med `-v` visas alla meddelanden.
+- `regress.cjs` kör drygt 200 meddelanden. De flesta är realistiska bluffar och äkta meddelanden från granskningar (`regress-cases.cjs` och `regress-extra.cjs`), och vart och ett måste få rätt svar. Den kontrollerar också att de två råd som visas inte säger samma sak, och att analysen går snabbt. Med `-v` visas alla meddelanden.
 - `test-engine.cjs` kör 54 meddelanden.
-- `verify.cjs` gör 35 kontroller av sidan: att exemplen och testfrågorna stämmer med verktyget, att telefonnumren ringer rätt, att texten har tillräcklig kontrast i ljust och mörkt läge och att alla länkar fungerar. Den behöver internet.
+- `verify.cjs` gör drygt 35 kontroller av sidan: att exemplen och testfrågorna stämmer med verktyget, att telefonnumren ringer rätt, att texten har tillräcklig kontrast i ljust och mörkt läge och att alla länkar fungerar. Den behöver internet.
 
 Telefonnumren i testerna är nummer som PTS och Ofcom har reserverat för påhittade sammanhang, så att inga riktiga personers nummer hamnar här. Använd sådana nummer i nya testfall också, till exempel 070-174 06 35 eller 08-465 004 56.
 

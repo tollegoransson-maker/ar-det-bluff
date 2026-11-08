@@ -4,14 +4,20 @@ var Bluffkoll = (function () {
   var BID = 'bank[- ]?id';
   var EID = '(?:bank[- ]?id|freja ?e-?id\\+?)';
   var LIMIT = 20000;
+  // Paying a fee or a deposit, and getting money or goods: together they make an advance-fee fraud.
+  var PAYFEE = '(?:betala|betalar|betalat|swisha|swishar|sätt(?:a)? in|göra en|gör en|överföra|överför|pay|send|transfer)\\s(?:[^\\s.!?\\n]+\\s){0,4}?(?:\\p{L}*avgift(?!sfri)\\w*|\\p{L}*insättning\\w*|\\p{L}*försäkring\\w*|\\p{L}*skatt\\w*|\\p{L}*kostnad\\w*|tull\\w*|frakt\\w*|deposition\\w*|(?:\\p{L}+ )?fee|deposit|(?:\\p{L}+ )?tax)';
+  var PAYFEE_NODEP = '(?:betala|betalar|swisha|swishar|överföra|överför|pay|send|transfer)\\s(?:[^\\s.!?\\n]+\\s){0,4}?(?:\\p{L}*avgift(?!sfri)\\w*|(?:\\p{L}+ )?fee)';
+  var GETPAID = '(?:betalas ut|betala ut|betalar (?:vi |de )?ut|utbetal\\w*|få ut|ta ut|uttag\\w*|låsa upp|lås upp|frigör\\w*|lånet|lånebeloppet|pengarna|vinsten|beloppet|får (?:du )?tillbaka|får (?:du )?betalt|få betalt|release\\w*|withdraw\\w*|paid out|unlock\\w*|the loan|your (?:money|funds|winnings))';
   function W(src, flags) {
     return new RegExp('(^|[^\\p{L}\\p{N}])(' + src + ')(?![\\p{L}\\p{N}])', flags || 'giu');
   }
   var NEG = /(^|[^\p{L}])(aldrig|inte|ej|icke|never|not|don'?t|do not|utan att)(?![\p{L}])/iu;
-  // "Glöm inte" and "tveka inte" push you to act, so they do not turn a request into a warning.
-  var ENCOURAGE = /(?:glöm|tveka|missa|dröj|vänta)\s+(?:inte|ej|aldrig)|(?:don'?t|do not|never)\s+(?:forget|hesitate|miss|wait|delay)/giu;
-  // A new clause starts after punctuation and after "men", "but" or "utan" (but not "utan att").
-  var CUT = /[,.;:!?\n]|\s(?:men|but|utan(?!\s+att))\s/giu;
+  // "Glöm inte" and "tveka inte" push you to act, and so do conditions such as "om du inte" and
+  // "kan inte ... utan att": they do not turn a request into a warning.
+  var ENCOURAGE = /(?:glöm|tveka|missa|dröj|vänta)\s+(?:inte|ej|aldrig)|(?:don'?t|do not|never)\s+(?:forget|hesitate|miss|wait|delay)|(?:om|ifall|såvida|så länge)\s+(?:du|ni)\s+(?:inte|ej)|(?:inte|ej)(?:\s+[^\s.,;:!?]+){0,6}?\s+utan att|if you (?:do not|don'?t)|unless/giu;
+  // A new clause starts after punctuation, after "men", "but" or "utan" (but not "utan att"),
+  // and after "förrän", "innan" and "tills": "kan inte betalas ut förrän du har angett ..." is a demand.
+  var CUT = /[,.;:!?\n]|\s(?:men|but|utan(?!\s+att)|förrän|innan|tills|until|before)\s/giu;
   var AFTER_NEG = /^\s+(?:inte|aldrig|ej)(?![\p{L}])/iu;
 
   var RULES = [
@@ -38,7 +44,15 @@ var Bluffkoll = (function () {
       title: 'Ber dig hålla det hemligt',
       why: 'Bedragare vill hindra dig från att prata med någon som kan avslöja bluffen. Riktiga banker och myndigheter säger aldrig så.',
       todo: 'Prata med någon du litar på innan du gör något.',
-      re: [W('berätta inte (?:det |detta |något |nåt |om det |om detta )?(?:för|till) (?:någon|nån|banken|polisen|din familj|dina barn|personalen|kassan|mamma|pappa|mormor|morfar|farmor|farfar)|säg (?:inte|inget|ingenting) (?:om det |om detta )?(?:till|för) (?:någon|nån|banken|polisen|personalen|kassan|din familj|dina barn|mamma|pappa)|prata inte med (?:någon|nån|banken|polisen|din familj|dina barn|personalen)|ring inte (?:till )?(?:mamma|pappa|mormor|morfar|farmor|farfar|morsan|farsan|någon|nån|banken|polisen|dina föräldrar)|håll (?:det här|detta|det) (?:hemligt|för dig själv)|(?:det här|detta) (?:måste )?stanna(?:r)? mellan oss|lägg inte på|inte berätta (?:det )?(?:för|om)|ingen (?:annan )?får veta|don\'?t tell|do not tell|keep (?:this|it) (?:secret|confidential|between us)')] },
+      re: [W('berätta inte (?:det |detta |något |nåt |om det |om detta )?(?:för|till) (?:någon|nån|banken|polisen|din familj|dina barn|personalen|kassan|mamma|pappa|mormor|morfar|farmor|farfar)|säg (?:inte|inget|ingenting) (?:om det |om detta )?(?:till|för) (?:någon|nån|banken|polisen|personalen|kassan|din familj|dina barn|mamma|pappa)|prata inte med (?:någon|nån|banken|polisen|din familj|dina barn|personalen)|ring inte (?:till )?(?:mamma|pappa|mormor|morfar|farmor|farfar|morsan|farsan|någon|nån|banken|polisen|dina föräldrar)|håll (?:det här|detta|det|affären|ärendet|betalningen) (?:hemligt|konfidentiellt|diskret|för dig själv)|(?:det här|detta) (?:måste )?stanna(?:r)? mellan oss|lägg inte på|inte berätta (?:det )?(?:för|om)|ingen (?:annan )?får veta|don\'?t tell|do not tell|keep (?:this|it) (?:secret|confidential|between us)')] },
+    { id: 'extortion', w: 3,
+      title: 'Hotar att sprida bilder eller film på dig',
+      why: 'Utpressningsmejl där någon påstår sig ha filmat dig eller tagit sig in i din dator skickas till tusentals adresser. Oftast finns ingen film. Den som betalar får bara nya krav.',
+      todo: 'Betala inte och svara inte. Spara meddelandet och polisanmäl. Gäller det ett barn: kontakta polisen direkt.',
+      re: [
+        W('(?:annars|eller så|om du inte (?:betalar|gör det|svarar)|or|otherwise|or else|if you (?:do not|don\'?t) pay)\\s(?:[^.!?\\n]{0,40}?\\s)?(?:skickar|sprider|publicerar|delar|lägger ut|send|share|publish|leak|post|release)\\w*(?: \\p{L}+){0,4} (?:videon|videoklippet|filmen|filmerna|bilderna|bilden|inspelningen|the video|the videos|the photos|the pictures|the recording)'),
+        W('(?:jag har|vi har) (?:hackat|full tillgång till|full kontroll över) (?:din|er) (?:dator|telefon|mobil|enhet|webbkamera|e-post|mejl)|(?:spelat in|filmat) dig (?:via|genom|med) (?:din |er )?(?:webbkamera\\w*|kamera\\w*)|i have (?:full access to|full control of|hacked) your (?:device|computer|phone|webcam|camera|email)|recorded you (?:through|with|via) your (?:webcam|camera)')
+      ] },
     { id: 'code_mistake', w: 3,
       title: 'Påstår att en kod har skickats till dig av misstag',
       why: 'Det här är ett vanligt sätt att kapa WhatsApp- och e-postkonton. Koden är nyckeln till ditt konto.',
@@ -49,7 +63,7 @@ var Bluffkoll = (function () {
       why: 'Koden i ett sms från banken, BankID eller en app är nyckeln till ditt konto. Den som får den kan logga in som du, till exempel i WhatsApp eller banken.',
       todo: 'Ge aldrig bort en kod du har fått, oavsett vem som frågar.',
       re: [
-        W('(?:skicka|skickar|svara med|lämna|uppge|berätta|läs upp|läsa upp|ge mig|ge oss|vidarebefordra|dela|säg|säga)[^.!?\\n]{0,45}(?:engångskod\\w*|sms-?kod\\w*|verifieringskod\\w*|bekräftelsekod\\w*|säkerhetskod\\w*|aktiveringskod\\w*|inloggningskod\\w*|bank-?id-?kod\\w*|koden (?:du (?:har )?fått|som (?:du )?(?:har )?fått|i sms\\w*|från (?:banken|sms\\w*)|vi (?:har )?skickat|vi skickade|som kom))'),
+        W('(?:skicka|skickar|svara med|lämna|uppge|berätta|läs upp|läsa upp|ge mig|ge oss|vidarebefordra|dela|säg|säga)[^.!?\\n]{0,45}(?:engångskod\\w*|sms-?kod\\w*|verifieringskod\\w*|bekräftelsekod\\w*|säkerhetskod\\w*|aktiveringskod\\w*|inloggningskod\\w*|bank-?id-?kod\\w*|koden (?:du (?:har )?fått|som (?:du )?(?:har )?fått|(?:som )?du (?:just |nyss |precis )?(?:har )?(?:fått|fick|får)|i sms\\w*|från (?:banken|sms\\w*)|vi (?:har )?skickat|vi skickade|som kom))'),
         W('(?:engångskod\\w*|sms-?kod\\w*|verifieringskod\\w*|bekräftelsekod\\w*|säkerhetskod\\w*|aktiveringskod\\w*|inloggningskod\\w*|en kod|koden)[\\s\\S]{0,90}?(?:läsa upp|läs upp|läser upp|skicka|skickar|vidarebefordra|berätta|säga|säg|ge mig|ge oss)\\s+(?:den|dem|koden|siffrorna)'),
         W('(?:sex|fyra|fem|åtta|6|4|5|8)[- ]?siffr\\w*[\\s\\S]{0,60}?(?:läsa upp|läs upp|skicka|skickar|vidarebefordra|berätta|säga|säg|ge mig)\\s+(?:dem|den|siffrorna|koden)'),
         W('(?:send|tell|share|forward|give|read)[^.!?\\n]{0,30}(?:verification code|one-time code|otp|6-digit code|six-digit code|code (?:you|we) (?:got|received|sent))')
@@ -63,42 +77,54 @@ var Bluffkoll = (function () {
         W('(?:bank[- ]?id|godkänn\\w*|signera\\w*|legitimera\\w*|bekräfta\\w*|verifiera\\w*|klicka|kortuppgifter\\w*|kortnummer|fyll i|logga in)[^.!?\\n]{0,60}(?:så får du|så kan du (?:få|ta emot)|och få|och ta emot|för att (?:kunna )?(?:få|ta emot|motta|få ut|ta ut)|så att du (?:kan|får)(?: få| ta emot)?|och sen (?:får|kan) du(?: få| ta emot)?)[^.!?\\n]{0,30}(?:pengar\\w*|betalt|betalning\\w*|beloppet|swish\\w*|ersättning\\w*|återbetalning\\w*|utbetalning\\w*)'),
         W('(?:receive|get|claim)[^.!?\\n]{0,40}(?:payment|money|funds|refund)[^.!?\\n]{0,40}(?:card|bank ?id|log ?in|verify|confirm)')
       ] },
-    { id: 'cards', w: 3, neg: true,
+    { id: 'cards', w: 3, neg: true, ctx: /(?:^|[^\p{L}])(?:jag|vi)\s+$/iu, skip: /(?:våra|vårt|vår|our)\s+(?:\p{L}+\s+)?(?:bankuppgifter|kontouppgifter|kontonummer|bankgiro\w*|betalningsuppgifter|bank details|account details|banking details)/iu,
       title: 'Ber om kortuppgifter, lösenord eller personnummer',
       why: 'Banker, myndigheter och seriösa företag ber aldrig om sådant i sms, mejl eller chatt.',
       todo: 'Lämna inga kortuppgifter, lösenord eller personnummer.',
       re: [
-        W('(?:ange|anger|uppge|uppger|lämna|lämnar|skicka|skickar|svara med|fyll i|fylla i|fyller i|skriv in|skriva in|bekräfta|bekräftar|verifiera|verifierar|uppdatera|uppdaterar|registrera|registrerar|lägg till|lägga till|dela|delar|knappa in|mata in)[^.!?\\n]{0,45}(?:kortuppgifter\\w*|kortnummer\\w*|kortinformation\\w*|kortdetaljer\\w*|betalkort\\w*|kreditkort\\w*|cvc|cvv|cvv2|bankuppgifter\\w*|kontouppgifter\\w*|kontonummer\\w*|clearingnummer\\w*|betalningsuppgifter\\w*|betaluppgifter\\w*|betalningsinformation\\w*|inloggningsuppgifter\\w*|lösenord\\w*|personnummer\\w*)'),
+        W('(?:ange|anger|uppge|uppger|lämna|lämnar|skicka|skickar|svara med|fyll i|fylla i|fyller i|skriv in|skriva in|bekräfta|bekräftar|verifiera|verifierar|uppdatera|uppdaterar|registrera|registrerar|lägg till|lägga till|dela|delar|knappa in|mata in|behöver (?:jag|vi)(?: få)?|vill (?:jag|vi) (?:ha|få)|måste (?:jag|vi) (?:ha|få))[^.!?\\n]{0,45}(?:kortuppgifter\\w*|kortnummer\\w*|kortinformation\\w*|kortdetaljer\\w*|betalkort\\w*|kreditkort\\w*|cvc|cvv|cvv2|bankuppgifter\\w*|kontouppgifter\\w*|kontonummer\\w*|clearingnummer\\w*|betalningsuppgifter\\w*|betaluppgifter\\w*|betalningsinformation\\w*|inloggningsuppgifter\\w*|lösenord\\w*|personnummer\\w*)'),
         W('(?:enter|provide|confirm|update|send|share|verify|submit)[^.!?\\n]{0,45}(?:card (?:details|number|info\\w*)|cvv|cvc|password|bank (?:details|account)|payment (?:details|info\\w*)|login details)')
       ] },
-    { id: 'police_pickup', w: 3, skip: /(?:hennes|hans|deras|sina|sitt|sin)\s+(?:smycken|värdesaker|kontanter|pengar|guld|bankkort|kort)/iu,
+    { id: 'police_pickup', w: 3, skip: /(?:hennes|hans|deras|sina|sitt|sin|mitt|min|mina|vårt|vår|våra)\s+(?:smycken|värdesaker|kontanter|pengar|guld|bankkort|kort)/iu,
       title: 'Säger att någon ska hämta pengar, kort eller smycken',
       why: 'Polisen och banken hämtar aldrig kort, kontanter eller smycken hemma hos dig.',
       todo: 'Öppna inte dörren och lämna inte ifrån dig något. Ring 112 om någon är på väg.',
       re: [
-        W('(?:polis\\w*|bank\\w*|kollega\\w*|bud\\w*|väktare\\w*|vakt\\w*)[^.!?\\n]{0,80}(?:hämta|hämtar|komma och hämta|förvara|förvarar|ta hand om|samla in)[^.!?\\n]{0,40}(?:smycken|värdesaker|kontanter|pengar\\w*|guld\\w*|bankkort\\w*|kortet|korten|kort)'),
-        W('(?:vill|ska|kommer att|kommer och|måste|behöver)[^.!?\\n]{0,20}(?:ta med sig|ta med|hämta|förvara|ta hand om|samla in|lämna över|överlämna)[^.!?\\n]{0,40}(?:smycken|värdesaker|kontanter|guld\\w*|bankkort\\w*|kortet|korten|kort)')
+        W('(?:polis\\w*|bank\\w*|kollega\\w*|bud\\w*|kurir\\w*|chaufför\\w*|taxi\\w*|väktare\\w*|vakt\\w*|courier)[^.!?\\n]{0,80}(?:hämta|hämtar|komma och hämta|förvara|förvarar|ta hand om|samla in)[^.!?\\n]{0,40}(?:smycken|värdesaker|kontanter|pengar\\w*|guld\\w*|bankkort\\w*|kortet|korten|kort)'),
+        W('(?:vill|ska|kommer att|kommer och|måste|behöver)[^.!?\\n]{0,20}(?:ta med sig|ta med|hämta|förvara|ta hand om|samla in|lämna över|överlämna)[^.!?\\n]{0,40}(?:smycken|värdesaker|kontanter|guld\\w*|bankkort\\w*|kortet|korten|kort)'),
+        W('hem till dig[^.!?\\n]{0,60}(?:hämta|hämtar|ta hand om|förvara|samla in)[^.!?\\n]{0,40}(?:smycken|värdesaker|kontanter|guld\\w*|bankkort\\w*|kortet|korten|koderna)')
       ] },
     { id: 'guaranteed', w: 3,
       title: 'Lovar garanterad eller orimligt hög vinst',
       why: 'Garanterad avkastning finns inte, och ingen seriös placering ger flera procent i månaden. Den som lovar det försöker lura dig.',
       todo: 'Skicka inga pengar och lämna inga uppgifter.',
-      re: [W('garanterad (?:avkastning|vinst|inkomst|ränta)|garanterat (?:avkastning|vinst|resultat)|riskfri\\w* (?:investering\\w*|avkastning|vinst)|helt utan risk|(?:avkastning|vinst|tjäna|tjänar|ger|gav|ökar|ökade|växer|växte)[^.!?\\n]{0,40}\\d+(?:[,.]\\d+)? ?(?:%|procent) (?:i|per|varje|om) (?:månaden|månad|veckan|vecka|dagen|dag|dygnet)|guaranteed (?:returns?|profits?|income)|risk[- ]free')] },
+      re: [W('garanterad (?:avkastning|vinst|inkomst|ränta)|garanterat (?:avkastning|vinst|resultat)|riskfri\\w* (?:investering\\w*|avkastning|vinst)|helt utan risk|(?:avkastning|vinst|tjäna|tjänar|ger|gav|få|får|fick|ökar|ökade|växer|växte)[^.!?\\n]{0,40}\\d+(?:[,.]\\d+)? ?(?:%|procent) (?:i|per|varje|om) (?:månaden|månad|veckan|vecka|dagen|dag|dygnet)|guaranteed (?:returns?|profits?|income)|risk[- ]free|(?:insättning|investering|placering) på \\d[\\d  .]*\\s?(?:kr|kronor|sek|€|\\$|usd)[^.!?\\n]{0,60}?(?:nästa vecka|om en vecka|inom en vecka|på en vecka|i morgon|inom \\d+ dagar|på \\d+ dagar|om \\d+ dagar)[^.!?\\n]{0,30}?\\d[\\d  .]*\\s?(?:kr|kronor|sek|€|\\$|usd)')] },
+    { id: 'advance_fee', w: 3, neg: true,
+      title: 'Du ska betala en avgift för att få pengar',
+      why: 'Ett lån, en vinst, en utbetalning eller ett uttag som kräver att du först betalar en avgift är ett känt bedrägeri. Pengarna kommer aldrig, och snart kommer krav på fler avgifter.',
+      todo: 'Betala ingenting i förväg. Riktiga lån och utbetalningar kräver inga avgifter i förskott.',
+      re: [
+        W(PAYFEE + '[^.!?\\n]{0,60}?(?:så|för att|innan|sedan|sen|därefter|then|before|to|so)\\s[^.!?\\n]{0,30}?' + GETPAID),
+        W(GETPAID + '[^.!?\\n]{0,60}?(?:behöver du|måste du|ska du|krävs|när du(?: har)?|you (?:must|need to|have to))\\s[^.!?\\n]{0,30}?' + PAYFEE),
+        W(PAYFEE_NODEP + '[^.!?\\n]{0,60}?(?:får (?:du )?tillbaka (?:den|det|avgiften|pengarna|beloppet)|(?:will )?get (?:it|the fee|your money) back)'),
+        W(GETPAID + '[^.!?\\n]{0,40}?mot en (?:\\p{L}+ )?(?:avgift|fee)\\w*'),
+        W('\\p{L}*avgift\\w*[^.!?\\n]{0,20}i förskott|förskottsavgift\\w*|upfront fee|advance fee|pay (?:a fee )?(?:up ?front|in advance)')
+      ] },
     { id: 'bankid_fix', w: 2.5,
       title: 'Påstår att ditt BankID måste åtgärdas',
       why: 'Bedragare skickar ofta meddelanden om att BankID har spärrats eller måste förnyas. Förnya bara BankID i din banks egen app, aldrig via en länk eller på uppmaning i telefon.',
       todo: 'Förnya eller lås upp BankID bara i din banks egen app, som du öppnar själv.',
       re: [
         W('(?:förnya|förnyar|aktivera|aktiverar|återaktivera|reaktivera|uppdatera|uppdaterar|lås upp|låsa upp)[^.!?\\n]{0,45}' + EID),
-        W(EID + '[^.!?\\n]{0,45}(?:spärrat|spärrats|spärras|blockerat|blockerats|blockeras|upphör|går ut|har gått ut|löper ut|har löpt ut|ogiltigt|ogiltig|inaktiverat|inaktiveras|måste förnyas|behöver förnyas|stängs av|har stängts av|avslutas)')
+        W(EID + '[^.!?\\n]{0,45}(?:spärrat|spärrats|spärras|blockerat|blockerats|blockeras|upphör|går ut|har gått ut|löper ut|har löpt ut|ogiltigt|ogiltig|inaktiverat|inaktiveras|måste förnyas|behöver förnyas|(?:måste|behöver) (?:uppdateras|aktiveras|verifieras|bekräftas)|kommer att (?:spärras|inaktiveras|sluta fungera)|slutar (?:att )?fungera|stängs av|har stängts av|avslutas)')
       ] },
     { id: 'bankid_use', w: 2.5, neg: true,
       title: 'Ber dig använda BankID',
       why: 'BankID är din digitala namnteckning. Den som får dig att legitimera dig eller skriva under kan logga in som du, ta lån och tömma konton.',
       todo: 'Använd aldrig BankID när någon annan har bett dig. Bara när du själv har startat något.',
       re: [
-        W('(?:legitimera|legitimerar|identifiera|identifierar|signera|signerar|godkänn|godkänna|godkänner|logga in|loggar in|skriv under|skriva under|bekräfta|bekräftar|verifiera|verifierar|skanna|scanna|läs av)[^.!?\\n]{0,45}' + EID),
-        W(EID + '[^.!?\\n]{0,50}(?:skanna|scanna|legitimera|identifiera|signera|godkänn\\w*|logga in|skriv under|bekräfta|verifiera)'),
+        W('(?:legitimera|legitimerar|identifiera|identifierar|signera|signerar|godkänn|godkänna|godkänner|logga(?:r)?(?: du| ni)? in|skriv(?:a|er)?(?: du| ni)? under|bekräfta|bekräftar|verifiera|verifierar|skanna|scanna|läs av)[^.!?\\n]{0,45}' + EID),
+        W(EID + '[^.!?\\n]{0,50}(?:skanna(?:r)?|scanna(?:r)?|legitimera(?:r)?|identifiera(?:r)?|signera(?:r)?|godkänn\\w*|logga(?:r)?(?: du| ni)? in|skriv(?:a|er)?(?: du| ni)? under|bekräfta(?:r)?|verifiera(?:r)?)'),
         W('(?:legitimera|identifiera|signera|verifiera|bekräfta) dig (?:i|med|via|genom) (?:appen|bank-?appen|mobilen|telefonen|' + BID + ')'),
         W('(?:verify|confirm|sign|log ?in|identify|approve|scan)[^.!?\\n]{0,45}bank ?id')
       ] },
@@ -127,12 +153,17 @@ var Bluffkoll = (function () {
       title: 'Påstår att pengar har skickats till dig av misstag',
       why: 'Bedragare säger att de har swishat dig av misstag och ber dig skicka tillbaka. Ofta har inga pengar kommit in, eller så kommer de från ett annat bedrägeri.',
       todo: 'Kolla i din bank om pengarna verkligen har kommit in. Skicka inget tillbaka själv, kontakta banken.',
-      re: [W('(?:swishade|swishat|skickade|skickat|betalade|betalat|överförde|fört över|förde över|satte in|satt in)[^.!?\\n]{0,40}(?:av misstag|till fel (?:nummer|person|konto)|felaktigt|av en slump)|(?:sent|paid|transferred)[^.!?\\n]{0,30}(?:by mistake|by accident|to the wrong)')] },
+      re: [W('(?:swishade|swishat|skickade|skickat|betalade|betalat|överförde|fört över|förde över|satte in|satt in)[^.!?\\n]{0,40}(?:av misstag|till fel (?:nummer|person|konto)|felaktigt|av en slump)|(?:råkat|råkade) (?:swisha|betala|föra över|överföra|sätta in)|swisha tillbaka (?:dem |pengarna |beloppet )?till (?:min|mitt|ett annat|en annan|detta|det här)|(?:sent|paid|transferred)[^.!?\\n]{0,30}(?:by mistake|by accident|to the wrong)')] },
     { id: 'new_number', w: 2.5,
       title: 'Påstår sig ha ett nytt nummer',
       why: 'Så börjar ”Hej mamma”-bluffen. Någon låtsas vara en anhörig med ny telefon och ber snart om pengar.',
       todo: 'Ring personen på det gamla, vanliga numret, eller ställ en fråga som bara hen kan svara på.',
-      re: [W('nytt nummer|nya nummer|nytt mobilnummer|nytt telefonnummer|ny telefon|ny mobil|tappat (?:min (?:telefon|mobil)|mobilen|telefonen)|tappade (?:min (?:telefon|mobil)|mobilen|telefonen)|(?:telefonen|mobilen|min telefon|min mobil) (?:gick|är|har gått) sönder|(?:telefonen|mobilen|min telefon|min mobil|min) är på (?:lagning|reparation|service)|skriver från (?:min |en |mitt )?(?:jobbtelefon\\w*|jobbmobil\\w*|kompis\\w* (?:telefon|mobil)|väns (?:telefon|mobil)|lånad\\w* (?:telefon|mobil)|annan (?:telefon|mobil))|spara (?:detta|det här|mitt|det nya) (?:nummer|numret|nya nummer)|spara numret|lånad telefon|lånar (?:en )?kompis(?:ens)? (?:telefon|mobil)|bytt nummer|new number|lost my phone|broke my phone|save (?:this|my) (?:new )?number')] },
+      re: [W('nytt nummer|nya nummer|nytt mobilnummer|nytt telefonnummer|ny telefon|ny mobil|tappat (?:min (?:telefon|mobil)|mobilen|telefonen)|tappade (?:min (?:telefon|mobil)|mobilen|telefonen)|(?:telefonen|mobilen|min telefon|min mobil) (?:gick|är|har gått) sönder|(?:telefonen|mobilen|min telefon|min mobil|min) är på (?:lagning|reparation|service)|skriver från (?:min |en |mitt )?(?:jobbtelefon\\w*|jobbmobil\\w*|kompis\\w* (?:telefon|mobil)|väns (?:telefon|mobil)|lånad\\w* (?:telefon|mobil)|annan (?:telefon|mobil))|spara (?:detta|det här|mitt|det nya) (?:nummer|numret|nya nummer)|spara numret|lånad telefon|lånar (?:en )?kompis(?:ens)? (?:telefon|mobil)|bytt nummer|new number|lost my phone|broke my phone|save (?:this|my) (?:new )?number|(?:using|on|borrowed) (?:a |my )?friend\'?s (?:phone|mobile)')] },
+    { id: 'cant_pay_self', hidden: true,
+      title: 'Säger att hen inte kommer åt sin bank',
+      why: 'Den som skriver från ett nytt nummer och säger att BankID eller banken inte fungerar vill oftast att du betalar åt hen. Så brukar ”Hej mamma”-bluffen gå till.',
+      todo: 'Ring personen på det gamla, vanliga numret innan du betalar något.',
+      re: [W('(?:(?:har|hade) (?:inte|inget|ingen)|inte (?:har|hade)(?: något)?) (?:bank-?id|tillgång till (?:banken|mitt konto|min bank|bank-?id|swish))|(?:kommer|har) inte (?:kommit )?åt (?:banken|min bank|mitt konto|bank-?id|swish|bankappen|internetbanken)|(?:mitt )?(?:bank-?id|bankappen|swish) (?:funkar|fungerar) inte|(?:my )?bank(?:ing)? app (?:doesn\'?t|does not|isn\'?t) work\\w*|can\'?t (?:access|log ?in to|get into) my (?:bank|account)|my (?:bank )?card (?:is|has been|got|was) (?:blocked|frozen|stopped)|(?:mitt (?:bank)?kort|kortet) (?:är|har blivit) spärrat')] },
     { id: 'security_dept', w: 2, ctx: /bedragare|bluffare|utger sig|påstår sig|låtsas|scammers?|pretend/iu,
       title: 'Hänvisar till en ”säkerhetsavdelning”',
       why: 'Falska säkerhetsavdelningar är ett av de vanligaste knepen. När du ringer upp svarar bedragaren och ber dig använda BankID.',
@@ -141,50 +172,61 @@ var Bluffkoll = (function () {
     { id: 'account_problem', w: 2,
       title: 'Påstår att något är fel som du måste rätta',
       why: 'Ett påstått problem med kontot, kortet eller adressen är ett vanligt sätt att få dig att logga in på en falsk sida eller ringa ett falskt nummer.',
-      todo: 'Logga in själv i appen eller på webbplatsen, inte via länken, och se om något verkligen är fel.',
+      todo: 'Öppna appen eller webbplatsen själv, inte via meddelandet, och se om något verkligen är fel.',
       re: [
         W('(?:misstänkt|misstänkta|ovanlig|ovanliga|obehörig|obehöriga|okänd|okända|avvikande) (?:aktivitet\\w*|inloggning\\w*|transaktion\\w*|köp|användning|betalning\\w*|enhet)'),
         W('(?:ditt|ert|din|er) (?:konto|kort|bankkort|abonnemang|e-postkonto|mejlkonto|profil|medlemskap)[^.!?\\n]{0,30}(?:spärrat|spärrats|spärras|låst|låsts|låses|stängt|stängts|stängs|blockerat|blockerats|blockeras|inaktiverat|inaktiveras|avstängt|avstängd|fryst|frysts|begränsat|begränsats|pausat|pausats|hackat|hackats|kapat|kapats)'),
-        W('säkerhetsproblem|säkerhetsåtgärd\\w*|(?:uppdatera|bekräfta|verifiera|kontrollera|validera|säkra) (?:dina|era|ditt|ert|din|er) (?:uppgifter|konto|identitet|information|betalningsuppgifter|kontouppgifter|profil|adress|leveransadress|adressuppgifter)'),
+        W('(?:ditt|ert) (?:medlemskap|konto) (?:avslutas|kommer att avslutas|har avslutats)'),
+        W('(?:ditt|ert) lösenord[^.!?\\n]{0,20}(?:löper ut|går ut|har gått ut|upphör)|password[^.!?\\n]{0,20}(?:expires?|has expired)|säkerhetsproblem|säkerhetsåtgärd\\w*|(?:uppdatera|bekräfta|verifiera|kontrollera|validera|säkra)(?:r)? (?:dina|era|ditt|ert|din|er) (?:uppgifter|konto|identitet|information|betalningsuppgifter|kontouppgifter|profil|adress|leveransadress|adressuppgifter)'),
         W('(?:ditt|ert) (?:kort|bankkort|konto|kreditkort) har (?:använts|missbrukats|kapats|hackats|spärrats|låsts)'),
-        W('ofullständig (?:adress|leveransadress|adressinformation|adressuppgift\\w*)|felaktig (?:adress|leveransadress|adressuppgift\\w*)|(?:din|er) (?:adress|leveransadress)[^.!?\\n]{0,20}(?:är ofullständig|är felaktig|saknas)|boka (?:ny|om) (?:leveranstid|leverans\\w*)|ny leveranstid|ny enhet har (?:lagts till|registrerats|kopplats|anslutits)'),
+        W('ofullständig (?:adress|leveransadress|adressinformation|adressuppgift\\w*)|felaktig (?:adress|leveransadress|adressuppgift\\w*)|(?:din |er )?(?:adress|adressen|leveransadress|leveransadressen)[^.!?\\n]{0,20}(?:är ofullständig|är felaktig|saknas)|ny enhet har (?:lagts till|registrerats|kopplats|anslutits)'),
         W('unusual activity|suspicious (?:activity|login|sign-in)|account (?:has been |is |was )?(?:locked|suspended|limited|disabled|compromised)|verify your (?:account|identity|information)|update your (?:payment|billing|account)')
       ] },
     { id: 'debt', w: 2,
       title: 'Hotar med skuld, böter eller Kronofogden',
       why: 'Hot om skulder och böter ska skrämma dig att betala snabbt. Kontrollera alltid själv, till exempel på kronofogden.se eller hos företaget.',
       todo: 'Betala inget via meddelandet. Kontrollera skulden själv, på ett sätt du väljer.',
-      re: [W('obetald\\w* (?:skuld\\w*|faktura\\w*|räkning\\w*|avgift\\w*|böter|parkeringsavgift\\w*|skatt|vägtull\\w*|trängselskatt|trafikbot\\w*|parkeringsbot\\w*)|skuld (?:hos|till)|betalningskrav\\w*|betalningspåminnelse\\w*|kravbrev\\w*|restskatt\\w*|tilläggsavgift\\w*|inkasso\\w*|utmätning\\w*|betalningsanmärkning\\w*|betalningsföreläggande\\w*|trafikbot\\w*|parkeringsbot\\w*|fortkörningsbot\\w*|ordningsbot\\w*|böter|bötesbelopp\\w*|kontrollavgift\\w*|rättsliga åtgärder|stämning|kronofogden|debt collect\\w*|legal action|unpaid (?:invoice|bill|fee|toll|fine)')] },
+      re: [W('obetald\\w* (?:skuld\\w*|faktura\\w*|räkning\\w*|avgift\\w*|böter|parkeringsavgift\\w*|skatt|vägtull\\w*|trängselskatt|trafikbot\\w*|parkeringsbot\\w*)|skuld (?:hos|till)|betalningskrav\\w*|betalningspåminnelse\\w*|kravbrev\\w*|restskatt\\w*|tilläggsavgift\\w*|inkasso\\w*|utmätning\\w*|betalningsanmärkning\\w*|betalningsföreläggande\\w*|trafikbot\\w*|parkeringsbot\\w*|fortkörningsbot\\w*|ordningsbot\\w*|böter|bötesbelopp\\w*|kontrollavgift\\w*|rättsliga åtgärder|stämning|(?:skickas|lämnas|överlämnas|går|gå vidare|går vidare|vidare) till kronofogden|debt collect\\w*|legal action|unpaid (?:invoice|bill|fee|toll|fine)|outstanding (?:amount|balance|toll|payment)|toll road|late fee')] },
     { id: 'legal_threat', w: 2,
       title: 'Hotar med polis, åtal eller domstol',
       why: 'Falska kallelser från ”polisen”, ”Europol” eller en domstol ska skrämma dig att svara, betala eller lämna uppgifter. Riktiga kallelser kommer inte som sms eller mejl med krav på snabbt svar.',
       todo: 'Svara inte. Vill du kontrollera, ring polisen på 114 14.',
-      re: [W('kallats till förhör|kallelse till förhör|kallad till förhör|förhör (?:hos|på|med) polisen|åklagar\\w*|åtal\\w*|rättegång\\w*|arresteringsorder|häktningsorder|anhållningsorder|brottsmisstänkt|misstänkt för (?:brott|bedrägeri|penningtvätt)|penningtvätt|europol|interpol|polisanmäl\\w* (?:dig|er)|arrest warrant|court summons|legal proceedings')] },
+      re: [W('kallats till förhör|kallelse till förhör|kallad till förhör|efterlys\\w*|warrant (?:has been issued )?for your arrest|you are (?:now )?wanted|(?:har använts|användes) (?:vid|i|för) (?:ett |flera )?(?:allvarligt |grovt )?brott|(?:has been|was) used in (?:a |an )?(?:serious )?crime|förhör (?:hos|på|med) polisen|åklagar\\w*|åtal\\w*|rättegång\\w*|arresteringsorder|häktningsorder|anhållningsorder|brottsmisstänkt|misstänkt för (?:brott|bedrägeri|penningtvätt)|penningtvätt|europol|interpol|polisanmäl\\w* (?:dig|er)|arrest warrant|court summons|legal proceedings')] },
     { id: 'lure', w: 2,
       title: 'Lockar med pengar, vinst eller gåva',
       why: 'Löften om pengar tillbaka, vinster eller gåvor är ett vanligt lockbete för att komma åt dina kortuppgifter.',
       todo: 'Kontrollera själv hos avsändaren. Pengar du har rätt till får du utan att lämna kortuppgifter.',
-      re: [W('skatteåterbäring\\w*|återbäring\\w*|återbetalning\\w*|pengar tillbaka|pengar att få tillbaka|(?:få|får) tillbaka \\d[\\d  ]* ?(?:kr|kronor)|betalat för mycket|överskjutande skatt|du har vunnit|du har valts ut|du är utvald|vinnare|belöning\\w*|lojalitetsbonus|gratis (?:iphone|ipad|presentkort|produkt\\w*|gåva)|ett presentkort|presentkort (?:på|värt)|kundundersökning\\w*|refund\\w*|you (?:have )?won|winner|congratulations|reward|free gift|claim your')] },
+      re: [W('skatteåterbäring\\w*|återbäring\\w*|återbetalning\\w*|pengar tillbaka|pengar att få tillbaka|(?:få|får) tillbaka \\d[\\d  ]* ?(?:kr|kronor)|betalat för mycket|överskjutande skatt|du har vunnit|du har valts ut|(?:har )?blivit utvald\\w*|du är utvald|vinnare|belöning\\w*|lojalitetsbonus|gratis (?:iphone|ipad|presentkort|produkt\\w*|gåva)|ett presentkort|presentkort (?:på|värt)|kundundersökning\\w*|bortglömd\\w* (?:pension|pengar)|pengar att hämta|outtagna pengar|unclaimed (?:money|funds)|refund\\w*|you (?:have )?won|winner|congratulations|reward|free gift|claim your')] },
     { id: 'investment', w: 2,
       title: 'Handlar om investering eller snabba pengar',
       why: 'Investeringsbedrägerier lockar med hög avkastning, ofta via falska kändisannonser eller en ”mentor”. Pengarna försvinner och sedan kommer krav på mer.',
       todo: 'Investera aldrig via någon som har kontaktat dig. Kontrollera företaget på fi.se.',
-      re: [W('passiv inkomst|tjäna (?:pengar|stora pengar|massor|extra) (?:snabbt|hemifrån|enkelt|på nätet)|dubbla (?:dina|era) pengar|investera\\w*|investering\\w*|krypto\\w*|bitcoin|ethereum|digitala tillgångar|tradingrobot\\w*|börsrobot\\w*|ai-?robot\\w*|ai[- ]trading|ai-?handel\\w*|ai-?plattform\\w*|tradingplattform\\w*|handelsplattform\\w*|(?:mentor|coach)[^.!?\\n]{0,40}(?:tjäna|pengar|investera|trading|avkastning)|aktietips|forex|passive income|double your money|crypto\\w*|investment\\w*')] },
+      re: [W('passiv inkomst|tjäna (?:pengar|stora pengar|massor|extra) (?:snabbt|hemifrån|enkelt|på nätet)|dubbla (?:dina|era) pengar|investera\\w*|investering(?!ssparkonto)\\w*|krypto\\w*|bitcoin|ethereum|digitala tillgångar|tradingrobot\\w*|börsrobot\\w*|ai-?robot\\w*|ai[- ]trading|ai-?handel\\w*|ai-?plattform\\w*|tradingplattform\\w*|handelsplattform\\w*|startinsättning\\w*|minsta insättning\\w*|bankerna (?:är )?(?:rasande|hatar|vill inte)|banks hate|(?:avslöjar|avslöjade|berättar|reveals?) (?:hur|how)[^.!?\\n]{0,40}(?:tjän\\w*|blev rik|rik på|earn\\w*|got rich)|(?:mentor|coach)[^.!?\\n]{0,40}(?:tjäna|pengar|investera|trading|avkastning)|aktietips|forex|passive income|double your money|crypto\\w*|investment\\w*')] },
     { id: 'easy_money', w: 2,
       title: 'Lovar mycket pengar på kort tid',
       why: 'Löften om att tjäna tusentals kronor om dagen eller i veckan, utan att det framgår hur, är typiska för investerings- och jobbluffar.',
       todo: 'Svara inte. Ingen seriös arbetsgivare eller investering lovar sådana summor i ett oväntat meddelande.',
-      re: [W('tjäna \\d[\\d  .,–-]* ?(?:kr|kronor|sek|:-|\\$|€)? ?(?:per|om|i|varje|på en) (?:dag|dagen|timme|timmen|vecka|veckan|månad|månaden)|earn \\$?\\d[\\d,.]* (?:per|a|every) (?:day|hour|week|month)')] },
+      re: [W('(?:tjäna|tjänar|tjänade) \\d[\\d  .,–-]* ?(?:kr|kronor|sek|:-|\\$|€)? ?(?:per|om|i|varje|på en) (?:dag|dagen|timme|timmen|vecka|veckan|månad|månaden)|(?:lön|lönen|ersättning|ersättningen|inkomst|betalt|arvode)\\s(?:(?:är|blir|ligger på)\\s)?(?:på\\s)?(?:upp till\\s|mellan\\s|cirka\\s|ca\\s)?\\d[\\d  .,–-]* ?(?:kr|kronor|sek|:-|\\$|€|usd|eur)? ?(?:per|om|i|varje|/) ?(?:dag|dagen|vecka|veckan)|(?:får|tjänar|betalar vi|ger vi) (?:du )?(?:upp till |mellan |minst )?\\d[\\d  .,–-]* ?(?:kr|kronor|sek|:-|\\$|€)? ?(?:per|om|i|varje|/) ?(?:dag|dagen|vecka|veckan)|earn\\w* \\$?\\d[\\d,.]*(?:[–-]\\$?\\d[\\d,.]*)? ?(?:usd|sek|eur|dollars?|kr)? ?(?:per (?:day|hour|week|month)|a (?:day|week)|every (?:day|week)|daily|weekly)')] },
     { id: 'task', w: 3,
       title: 'Erbjuder betalt för att gilla eller titta på klipp',
       why: 'Det här är ett känt bedrägeri. Först får du små summor, sedan måste du sätta in egna pengar för att få ut din ”lön”, och de pengarna försvinner.',
       todo: 'Svara inte. Riktiga arbetsgivare betalar inte för att du gillar klipp och kräver aldrig att du sätter in pengar.',
-      re: [W('(?:betalt|ersättning|provision|\\d+ ?kr|\\$\\d+)[^.!?\\n]{0,30}(?:per|för varje) (?:gillad\\w*|gilla-?markering\\w*|like|klipp|video\\w*|uppgift|recension\\w*)|(?:ge (?:dem|det|klippen|videorna|inläggen) tummen upp|gilla (?:videor|videos|klipp)|titta på (?:korta )?(?:klipp|videor|videos))[\\s\\S]{0,80}?(?:betalt|ersättning|provision|\\d+ ?kr|tjäna)|(?:betalt|tjäna pengar|ersättning|lön) för att (?:gilla|titta|recensera|betygsätta|skriva recensioner|följa)|gilla (?:videor|videos|klipp)|like videos|paid (?:to|for) (?:like|watch|review)\\w*|per like')] },
+      re: [W('(?:betalt|ersättning|provision|\\d+ ?kr|\\$\\d+)[^.!?\\n]{0,30}(?:per|för varje) (?:gillad\\w*|gilla-?markering\\w*|like|klipp|video\\w*|uppgift|recension\\w*|betyg\\w*|omdöme\\w*|order|beställning\\w*|review\\w*|rating\\w*|task\\w*)|låsa upp (?:nästa|en högre) nivå|unlock the next level|för varje (?:\\p{L}+ ){0,2}(?:du |som du )(?:recenserar|gillar|betygsätter|tittar på|delar|klickar på|laddar upp)|for (?:each|every) (?:\\w+ ){0,2}(?:you )?(?:review|like|rate|watch)\\w*|(?:ge (?:dem|det|klippen|videorna|inläggen) tummen upp|gilla (?:videor|videos|klipp)|titta på (?:korta )?(?:klipp|videor|videos))[\\s\\S]{0,80}?(?:betalt|ersättning|provision|\\d+ ?kr|tjäna)|(?:betalt|tjäna pengar|ersättning|lön) för att (?:gilla|titta|recensera|betygsätta|skriva recensioner|följa)|gilla (?:videor|videos|klipp)|like videos|paid (?:to|for) (?:like|watch|review)\\w*|per like')] },
     { id: 'job', w: 2,
       title: 'Jobberbjudande som låter för bra',
       why: 'Falska jobb lockar med lätta pengar för enkla uppgifter. Snart måste du ”sätta in pengar” för att få ut din lön.',
       todo: 'Svara inte. Riktiga arbetsgivare kräver aldrig att du betalar något.',
-      re: [W('extrajobb|deltidsjobb|jobba hemifrån|jobb hemifrån|arbeta hemifrån|flexibelt (?:jobb|arbete|extrajobb)|work from home|part[- ]time job')] },
+      re: [W('extrajobb|deltidsjobb|deltidsuppdrag|distansjobb|onlinejobb|online-jobb|jobba hemifrån|jobb hemifrån|arbeta hemifrån|flexibelt (?:jobb|arbete|extrajobb|distansjobb)|work from home|part[- ]time (?:job|jobs|work\\w*|online|position)|online (?:job|jobs|work\\w*)')] },
+    { id: 'mule', w: 2.5,
+      title: 'Vill använda ditt konto för andras pengar',
+      why: 'Den som tar emot pengar och skickar dem vidare åt någon annan blir en del av penningtvätt och kan själv bli polisanmäld. Bedragare lockar med ”extrajobb” eller en procentsats.',
+      todo: 'Säg nej. Låt aldrig någon annan använda ditt konto, ditt kort eller din Swish.',
+      re: [W('ta emot (?:betalningar|pengar|överföringar|swish\\w*)[^.!?\\n]{0,60}(?:för vidare|föra vidare|skicka vidare|skickar vidare|för över dem|vidarebefordra\\w*|överföra dem)|(?:låna ut|hyra ut) ditt (?:konto|bankkonto|swish\\w*|bankkort)|(?:receive|accept) (?:payments|money|funds|transfers)[^.!?\\n]{0,60}(?:forward|transfer (?:it|them)|send (?:it|them) on)')] },
+    { id: 'new_account', w: 2,
+      title: 'Säger att betalningar ska gå till ett nytt konto',
+      why: 'Bedragare kapar eller förfalskar mejl från leverantörer och chefer och ber dig betala till ett nytt kontonummer eller bankgiro. Pengarna går då till bedragaren.',
+      todo: 'Ring avsändaren på ett nummer du redan har och kontrollera innan du betalar.',
+      re: [W('(?:nytt|nya|ändrat|ändrade) (?:kontonummer|bankgiro\\w*|plusgiro\\w*|kontouppgifter|bankuppgifter|betalningsuppgifter)|(?:vi )?har (?:bytt|ändrat|uppdaterat) (?:bank|bankgiro|kontonummer|konto|våra bankuppgifter|våra kontouppgifter)|(?:vi )?har bytt (?:bank|bankgiro|kontonummer|konto)|new (?:bank )?(?:account|banking) details|(?:changed|updated) (?:our )?(?:bank|account|banking) details')] },
     { id: 'payment_request', w: 1.5,
       title: 'Nämner en betalningsförfrågan',
       why: 'En betalningsförfrågan i Swish betyder att du ska betala, inte att du får pengar. Bedragare påstår ofta motsatsen.',
@@ -198,24 +240,37 @@ var Bluffkoll = (function () {
         W('(?:kan du|skulle du kunna|kan ni|snälla|jag behöver|behöver|måste du)[^.!?\\n]{0,45}(?:swisha|låna mig|låna ut|betala|föra över|överföra|skicka pengar|lägga ut|sätta in pengar)'),
         W('swisha (?:mig |hit |till mig |till det här numret )?\\d[\\d  ]*(?:kr|kronor|:-|sek)?|swisha (?:mig|hit|till mig|till det här numret)'),
         W('(?:jag behöver|behöver|måste få|behöver låna)[^.!?\\n]{0,30}\\d[\\d  ]* ?(?:kr|kronor|:-|sek|euro|dollar|pund)'),
+        W('(?:kan du|skulle du kunna|snälla)[^.!?\\n]{0,20}(?:skicka|föra över|överföra|sätta in|swisha) \\d[\\d  ]* ?(?:kr|kronor|sek|:-|euro|€|dollar|\\$|pund|£)'),
         W('hjälp med pengar|låna pengar|behöver pengar|skicka pengar|hjälpa mig med (?:en |lite )?(?:betalning|räkning|pengar|faktura)|skicka tillbaka (?:dem|pengarna|beloppet|summan)'),
-        W('(?:can you|could you|please|i need)[^.!?\\n]{0,45}(?:send|transfer|lend|pay)[^.!?\\n]{0,30}(?:money|\\$|€|£|\\d)')
+        W('(?:can you|could you|please|i need)[^.!?\\n]{0,45}(?:send|transfer|lend|pay)[^.!?\\n]{0,30}(?:money|\\$|€|£|\\d)'),
+        W('(?:can you|could you|please)[^.!?\\n]{0,20}help me (?:to )?pay|help me pay (?:a|my|the|this) (?:bill|invoice|rent)')
       ] },
     { id: 'urgency', w: 1.5,
       title: 'Försöker stressa dig',
       why: 'Tidspress är bedragarens viktigaste verktyg. Den som är stressad hinner inte tänka efter.',
       todo: 'Ta det lugnt. Riktiga banker och myndigheter ger dig tid att tänka.',
-      re: [W('inom (?:\\d+|en|ett|två|tre|fyra|fem|sex|tolv|tjugofyra|fyrtioåtta) ?(?:timme|timmar|tim|h|dagar|dygn|minuter|min)|omedelbart|omgående|snarast(?: möjligt)?|genast|med en gång|brådskande|akut|sista (?:påminnelse\\w*|varning\\w*|chans\\w*|dagen)|senast (?:idag|i dag|ikväll|i kväll|imorgon|i morgon)|innan midnatt|före midnatt|annars (?:kommer|stängs|spärras|blir|förlorar|går|tas|debiteras|skickas|raderas|returneras|överlämnas|lämnas|anmäls|polisanmäls|åtalas|förfaller)|för att undvika|kommer (?:att )?(?:spärras|stängas|avslutas|raderas|blockeras|returneras|debiteras|förfalla|skickas till inkasso|lämnas till inkasso|överlämnas|polisanmälas)|urgent\\w*|immediately|within \\d+ ?(?:hours|hrs|h|days)|final (?:notice|reminder|warning)|act now|last chance|expires? today')] },
+      re: [W('inom (?:\\d+|en|ett|två|tre|fyra|fem|sex|tolv|tjugofyra|fyrtioåtta) ?(?:timme|timmar|tim|h|minuter|min)|inom (?:[1-7]|en|ett|två|tre|fyra|fem|sex|sju) ?(?:dagar|dygn)|(?:du|ni) har (?:\\d+|en|ett|två|tre|tolv|tjugofyra|fyrtioåtta|sjuttiotvå) ?(?:timme|timmar|tim|h|dagar|dygn|minuter) på (?:dig|er)|you have \\d+ (?:hours|days|minutes) to|(?:går ut|löper ut|upphör|stängs(?: av)?|spärras|raderas|förfaller|expires?) (?:i dag|idag|i kväll|ikväll|today|tonight)|omedelbart|omgående|snarast(?: möjligt)?|genast|med en gång|brådskande|akut|sista (?:påminnelse\\w*|varning\\w*|chans\\w*|dagen)|senast (?:idag|i dag|ikväll|i kväll|imorgon|i morgon)|innan midnatt|före midnatt|annars (?:kommer|stängs|spärras|blir|förlorar|går|tas|debiteras|skickas|raderas|returneras|överlämnas|lämnas|anmäls|polisanmäls|åtalas|förfaller)|för att undvika|kommer (?:att )?(?:spärras|stängas|avslutas|raderas|blockeras|returneras|debiteras|förfalla|skickas till inkasso|lämnas till inkasso|överlämnas|polisanmälas)|urgent\\w*|immediately|to avoid (?:a |an |any |further )?(?:penalty|penalties|late fee|fees?|suspension|arrest|charges|legal action|prosecution)|om (?:du|ni) inte[^.!?\\n]{0,50}(?:i dag|idag|i kväll|ikväll|omgående|genast|direkt|inom \\d+)|within \\d+ ?(?:hours|hrs|h|days)|final (?:notice|reminder|warning)|act now|last chance|expires? today')] },
     { id: 'stop_pretext', w: 1.5,
       title: 'Säger att du måste göra något för att stoppa ett köp eller lån',
       why: 'Ett påstått köp eller lån som bara du kan stoppa är ett vanligt knep. Det du godkänner då är ofta själva bedrägeriet.',
       todo: 'Gör ingenting via meddelandet eller samtalet. Logga in i bankens app själv och se om något har hänt.',
-      re: [W('(?:för att|så att vi kan|så vi kan|så kan vi) (?:kunna )?(?:stoppa|avbryta|spärra|förhindra|neka|makulera|annullera|blockera|häva|återkalla) (?:köpet|köpen|lånet|lånen|ett köp|ett lån|betalningen|betalningarna|överföringen|överföringarna|transaktionen|transaktionerna|ansökan|låneansökan|uttaget|dem|det)|så stoppar vi (?:dem|det|köpet|köpen|lånet|betalningen)|(?:to|so we can) (?:stop|cancel|block|reverse) (?:the |this |a )?(?:payment|purchase|transaction|loan|transfer)')] },
+      re: [W('(?:för att|så att vi kan|så vi kan|så kan vi) (?:kunna )?(?:stoppa|avbryta|spärra|förhindra|neka|makulera|annullera|blockera|häva|återkalla) (?:köpet|köpen|lånet|lånen|ett köp|ett lån|betalningen|betalningarna|överföringen|överföringarna|transaktionen|transaktionerna|ansökan|låneansökan|uttaget|dem|det)|så (?:stoppar|makulerar|spärrar|avbryter|annullerar|blockerar|nekar) vi (?:dem|det|köpet|köpen|lånet|lånen|betalningen|betalningarna|ansökan|kortet|överföringen)|(?:to|so we can) (?:stop|cancel|block|reverse) (?:the |this |a )?(?:payment|purchase|transaction|loan|transfer)')] },
     { id: 'call_number', w: 1.5,
       title: 'Ber dig ringa ett nummer i meddelandet',
       why: 'Numret kan gå direkt till bedragaren, som sedan låtsas vara banken eller en myndighet.',
       todo: 'Ring inte numret i meddelandet. Leta upp numret själv, till exempel på den riktiga webbplatsen eller på ditt kort.',
       re: [W('(?:ring|ringa|ringer|ring upp|kontakta|kontakta oss|slå en signal|nås på|call|contact us)[^.!?\\n]{0,40}?(?:\\+\\d{1,3}[ -]?)?\\(?0?\\d{1,4}\\)?[\\d -]{5,}\\d')] },
+    { id: 'press_key', hidden: true, re: [W('tryck(?: nu)?(?: på)? (?:siffran )?(?:\\d|ett|en siffra|en knapp|valfri knapp)|press (?:now )?(?:\\d|one|any key|a key|a button)')] },
+    { id: 'rental', w: 2,
+      title: 'Bostaden kan inte visas, men du ska betala',
+      why: 'Falska hyresvärdar är ofta ”utomlands”, kan inte visa bostaden och vill ha hyra och deposition innan du har sett den. Nycklarna kommer aldrig.',
+      todo: 'Betala aldrig för en bostad du inte har sett. Kontrollera att hyresvärden äger bostaden.',
+      re: [W('(?:skickar|skicka|postar)(?: jag| vi)? (?:nycklarna|nyckeln)|nycklarna (?:skickas|kommer|postas) (?:med|via|per)|(?:kan|går) inte (?:att )?visa (?:lägenheten|bostaden|huset|rummet)|visning (?:går inte|är inte möjlig|kan inte ordnas)|för (?:bådas|vår|vår båda|vår gemensamma) (?:säkerhet|trygghet)|for (?:both of )?our (?:safety|security)')] },
+    { id: 'reply_for_link', w: 2.5,
+      title: 'Vill att du svarar för att få en länk',
+      why: 'Många telefoner gör inte länkar från okända avsändare klickbara. Därför ber bedragare dig svara, så att länken börjar fungera. Inget seriöst företag gör så.',
+      todo: 'Svara inte. Kolla leveransen eller ärendet i företagets egen app.',
+      re: [W('svara (?:med )?(?:1|ja|y|yes|ok)(?![\\p{L}\\p{N}])[^.!?\\n]{0,40}länk\\w*|(?:reply|respond) (?:with )?(?:y|yes|1)(?![\\p{L}\\p{N}])[^.!?\\n]{0,40}link\\w*|(?:aktivera|öppna) länken genom att svara')] },
     { id: 'qr', w: 1.5,
       title: 'Ber dig skanna en QR-kod',
       why: 'En QR-kod kan leda till en falsk sida eller starta en BankID-inloggning åt någon annan.',
@@ -243,7 +298,7 @@ var Bluffkoll = (function () {
       title: 'Vill flytta kontakten till WhatsApp eller Telegram',
       why: 'Bedragare flyttar gärna kontakten till appar där de är svårare att spåra.',
       todo: 'Fortsätt inte kontakten i en annan app med någon du inte känner.',
-      re: [W('(?:kontakta|skriv till|lägg till|addera|hör av dig|kontakt|chatta)[^.!?\\n]{0,30}(?:whatsapp|telegram|viber)|(?:whatsapp|telegram|viber)[^.!?\\n]{0,12}(?:\\+\\d|\\d{3})')] },
+      re: [W('(?:kontakta|skriv till|lägg till|addera|hör av dig|kontakt|chatta|contact|add|message|text|reach|chat with|write to)[^.!?\\n]{0,30}(?:whatsapp|telegram|viber)|(?:whatsapp|telegram|viber)[^.!?\\n]{0,12}(?:\\+\\d|\\d{3}|@\\w)')] },
     { id: 'emergency', w: 1,
       title: 'Beskriver ett plötsligt nödläge',
       why: 'Ett nödläge gör att du vill hjälpa till snabbt, utan att kontrollera.',
@@ -259,13 +314,20 @@ var Bluffkoll = (function () {
       why: 'Ett företag du är kund hos vet oftast vad du heter.',
       todo: null,
       re: [W('(?:bästa|kära|ärade|värderade|hej) (?:kund|kunden|användare|medlem|kontoinnehavare)|dear (?:customer|user|member|client|account holder)|valued customer')] },
+    { id: 'no_voice', hidden: true, re: [W('kan inte (?:prata|ringa|svara i telefon|ta samtal)(?: just nu| nu)?|can\'?t (?:talk|call)(?: right now| now)?|cannot (?:talk|call)')] },
     { id: 'family_greet', hidden: true, re: [W('(?:hej|hejsan|hallå|tja|hi|hello|hey) (?:mamma|pappa|mor|far|morsan|farsan|mamsen|mammi|pappsen|mormor|morfar|farmor|farfar|mom|mum|mummy|dad)')] },
-    { id: 'family_claim', hidden: true, re: [W('det är (?:jag|ditt barnbarn|din dotter|din son|ditt barn|din pappa|din mamma)|(?:mormor|morfar|farmor|farfar|mamma|pappa|mamsen|morsan|farsan)[,!]')] },
+    { id: 'family_claim', hidden: true, re: [W('det är (?:jag|ditt barnbarn|din dotter|din son|ditt barn|din pappa|din mamma)|(?:mormor|morfar|farmor|farfar|mamma|pappa|mamsen|morsan|farsan)[,!]|(?:mum|mom|mummy|mommy|dad|daddy|grandma|granny|nana|grandpa)[,!]? it\'?s me|it\'?s me,? (?:mum|mom|dad)')] },
     { id: 'parcel', hidden: true, re: [W('paket\\w*|försändelse\\w*|leverans\\w*|levereras|leverera\\w*|utdelning\\w*|tull\\w*|frakt\\w*|kolli|package|parcel|delivery|shipment|customs')] },
-    { id: 'fee_words', hidden: true, re: [W('[\\p{L}]{0,20}avgift[\\p{L}]{0,12}|tull\\w*|frakt\\w*|porto|ombokning\\w*|fee|customs|shipping|postage|handling')] },
-    { id: 'romance', hidden: true, re: [W('älskling|min älskade|min kära|mitt hjärta|min ängel|sweetheart|my love|darling|längtar (?:så )?(?:mycket )?efter dig|du är den enda')] },
+    { id: 'fee_words', hidden: true, re: [W('[\\p{L}]{0,20}avgift[\\p{L}]{0,12}|tull\\w*|frakt\\w*|porto|ombokning\\w*|fee|customs|shipping|postage|handling|toll\\w*|vägtull\\w*|vägavgift\\w*|penalty|penalties')] },
+    { id: 'romance', hidden: true, re: [W('älskling|min älskade|älskade du|käraste du|min kära|min käraste|mitt hjärta|min ängel|sweetheart|my love|my dear(?:est)?|darling|längtar (?:så )?(?:mycket )?efter dig|du är den enda')] },
     { id: 'market', hidden: true, re: [W('blocket|tradera|marketplace|köpa din|köper din|säljer din|din annons|annonsen|köparen|säljaren')] },
     { id: 'login_words', hidden: true, re: [W('logga in|loggar in|inloggning\\w*|lösenord\\w*|ditt konto|ditt abonnemang|din profil|log ?in|sign ?in|your account|password')] },
+    { id: 'link_hint', hidden: true, re: [
+        W('klicka (?:på )?(?:länken|knappen|här)|tryck (?:på )?(?:länken|knappen|här)|via länken(?: nedan)?|länken nedan|knappen nedan|click (?:here|on the link|the link|the button)|tap (?:here|the link)|link below|button below|via (?:vår|den) säkra (?:sida|betalsida|webbsida|länk\\w*)|vår säkra (?:sida|betalsida|webbsida)|säker betalsida|secure (?:payment )?(?:page|portal|link)'),
+        new RegExp('(^|\\s)(\\[(?:betala|logga in|bekräfta|verifiera|uppdatera|öppna|hämta|fortsätt|signera|pay|log ?in|confirm|verify|update)[^\\]\\n]{0,30}\\])', 'giu')
+      ] },
+    { id: 'rebook', hidden: true, re: [W('boka (?:ny|om) (?:tid|leveranstid|leverans\\w*)|ny leveranstid|välj (?:en )?ny (?:leveranstid|tid)')] },
+    { id: 'reply_ask', hidden: true, re: [W('svara (?:ja|med|på (?:detta|det här|sms\\w*|mejlet|meddelandet|frågorna|\\p{L}+ frågor))|reply (?:yes|with|to this)|registrera dig|fyll i|ring|kontakta oss|hämta (?:den|vinsten|belöningen|presentkortet)|claim')] },
     { id: 'pay_words', hidden: true, re: [W('betala|betalar|betalning\\w*|faktura\\w*|räkning\\w*|pay|payment|invoice')] }
   ];
 
@@ -281,7 +343,9 @@ var Bluffkoll = (function () {
     { name: 'Skatteverket', words: 'skatteverket', tok: ['skatteverket', 'skatteverk'], dom: ['skatteverket.se'], g: 'gov' },
     { name: 'Kronofogden', words: 'kronofogden', tok: ['kronofogden', 'kronofogd'], dom: ['kronofogden.se'], g: 'gov' },
     { name: 'Försäkringskassan', words: 'försäkringskassan', tok: ['forsakringskassan', 'forsakringskassa'], dom: ['forsakringskassan.se'], g: 'gov' },
-    { name: 'Polisen', words: 'polis(?:en|myndigheten)', tok: ['polisen', 'polismyndigheten'], dom: ['polisen.se'], g: 'gov' },
+    { name: 'Polisen', words: 'polis(?:en|myndigheten)|swedish police(?: authority)?', tok: ['polisen', 'polismyndigheten'], dom: ['polisen.se'], g: 'gov' },
+    { name: 'Europol', words: 'europol', tok: ['europol'], dom: ['europa.eu'], g: 'gov' },
+    { name: 'Interpol', words: 'interpol', tok: ['interpol'], dom: ['interpol.int'], g: 'gov' },
     { name: 'CSN', words: 'CSN', cs: true, tok: ['csn'], dom: ['csn.se'], g: 'gov' },
     { name: 'Transportstyrelsen', words: 'transportstyrelsen', tok: ['transportstyrelsen'], dom: ['transportstyrelsen.se'], g: 'gov' },
     { name: 'Trafikverket', words: 'trafikverket', tok: ['trafikverket'], dom: ['trafikverket.se'], g: 'gov' },
@@ -405,6 +469,13 @@ var Bluffkoll = (function () {
     return before.slice(cut);
   }
 
+  // The part of the sentence that comes before position s.
+  function sentenceBefore(text, s) {
+    var before = text.slice(Math.max(0, s - 200), s);
+    var k = Math.max(before.lastIndexOf('.'), before.lastIndexOf('!'), before.lastIndexOf('?'), before.lastIndexOf('\n'));
+    return before.slice(k + 1);
+  }
+
   // A negation inside the match, earlier in the same clause or right after it means the text warns rather than asks.
   function isNegated(text, s, e, t) {
     return NEG.test(t.replace(ENCOURAGE, ' ')) || NEG.test(clauseBefore(text, s).replace(ENCOURAGE, ' ')) || AFTER_NEG.test(text.slice(e, e + 14));
@@ -417,7 +488,7 @@ var Bluffkoll = (function () {
       var t = m[2];
       if (!t) { re.lastIndex++; continue; }
       var s = m.index + m[1].length, e = s + t.length;
-      if ((rule.neg && isNegated(text, s, e, t)) || (rule.skip && rule.skip.test(t)) || (rule.ctx && rule.ctx.test(clauseBefore(text, s)))) {
+      if ((rule.neg && isNegated(text, s, e, t)) || (rule.skip && rule.skip.test(t)) || (rule.ctx && rule.ctx.test(sentenceBefore(text, s)))) {
         // Look again from the next character: a later request in the same stretch still counts.
         re.lastIndex = s + 1;
         continue;
@@ -513,11 +584,15 @@ var Bluffkoll = (function () {
     }
     var m;
     LINK_RE.lastIndex = 0;
-    while ((m = LINK_RE.exec(text)) !== null) add(m[2], m.index + m[1].length, 'url');
+    while ((m = LINK_RE.exec(text)) !== null) {
+      var st = m.index + m[1].length;
+      if (!/^(?:https?:\/\/|www\.)/i.test(m[2]) && /(?:^|\s)(?:hos|at)\s$/i.test(text.slice(Math.max(0, st - 5), st))) continue;
+      add(m[2], st, 'url');
+    }
     LINK2.lastIndex = 0;
     while ((m = LINK2.exec(text)) !== null) {
       var s2 = m.index + m[1].length, e2 = s2 + m[2].length;
-      if (!taken.some(function (r) { return s2 < r[1] && e2 > r[0]; })) add(m[2], s2, 'url');
+      if (!taken.some(function (r) { return s2 < r[1] && e2 > r[0]; }) && !/(?:^|\s)(?:hos|at)\s$/i.test(text.slice(Math.max(0, s2 - 5), s2))) add(m[2], s2, 'url');
     }
     if (text.indexOf('@') !== -1) {
       EMAIL_RE.lastIndex = 0;
@@ -557,9 +632,13 @@ var Bluffkoll = (function () {
   function guessType(ids, sig, groups) {
     if (ids.remote) return 'Fjärrstyrningsbluffen';
     if (ids.tech_scare) return 'Falsk teknisk support';
+    if (ids.extortion) return 'Utpressningsmejlet';
     if (ids.police_pickup) return 'Falska polisen';
     if ((ids.swish_receive || ids.payment_request) && (sig.market || groups.pay || groups.market)) return 'Köp-och-sälj-bluffen';
-    if (ids.new_number || ids.family_money) return '”Hej mamma”-bluffen';
+    if (ids.new_number || ids.family_money || ids.cant_pay_self || ids.no_voice_money) return '”Hej mamma”-bluffen';
+    if (ids.advance_fee) return sig.romance ? 'Kärleksbluffen' : (sig.market || groups.market) ? 'Köp-och-sälj-bluffen' : 'Förskottsbluffen';
+    if (ids.rental) return 'Hyresbluffen';
+    if (ids.new_account) return 'Fakturabluffen';
     if (ids.code_mistake) return 'Kontokapning';
     if (ids.safe_account || ids.security_dept || ids.bankid_claim || (groups.bank && (ids.account_problem || ids.bankid_fix || ids.bankid_use || ids.purchase_alert || ids.code || ids.code_sms || ids.call_number || ids.stop_pretext))) return 'Falska banken';
     if (ids.code_sms) return 'Kontokapning';
@@ -596,9 +675,13 @@ var Bluffkoll = (function () {
     });
     // The specific request for a code you have received replaces the general one.
     if (sig.code_sms) flags = flags.filter(function (f) { return f.id !== 'code'; });
+    // In an extortion mail bitcoin is how they want to be paid, not an investment.
+    if (sig.extortion) flags = flags.filter(function (f) { return f.id !== 'investment'; });
 
     var small = amounts(text).filter(function (a) { return a.v > 0 && a.v < 100; });
-    if (small.length && (sig.fee_words || sig.parcel)) {
+    LINK_RE.lastIndex = 0;
+    var asksPay = sig.pay_words || sig.link_hint || LINK_RE.test(text) || /obetal\w*|unpaid|outstanding|betalas|(?:inte|ej) (?:är |har )?betal\w*|är betald/iu.test(text);
+    if (small.length && (sig.fee_words || sig.parcel) && asksPay) {
       flags.push({ id: 'small_fee', w: 2, title: 'Ber dig betala en liten avgift',
         why: 'En liten summa för frakt, tull eller ombokning är ett lockbete. Det bedragarna egentligen vill åt är dina kortuppgifter.',
         todo: 'Betala aldrig via en länk i ett meddelande. Kolla leveransen i fraktbolagets egen app.', matches: small });
@@ -609,10 +692,31 @@ var Bluffkoll = (function () {
         why: 'Bedragare skriver ”Hej mamma” eller ”Mormor, det är jag” till tusentals nummer och hoppas att någon svarar. Rösten kan också vara falsk, gjord med AI.',
         todo: 'Ring ditt barn eller din anhörige på det vanliga numret innan du gör något.', matches: family });
     }
+    // A recorded voice that asks you to press a key; a message that tells you to call a menu is something else.
+    if (sig.press_key && !sig.call_number) {
+      flags.push({ id: 'press_key', w: 1.5, title: 'Ber dig trycka på en siffra i telefonen',
+        why: 'Bedragare ringer ofta med en inspelad röst som ber dig trycka på en siffra för att bli kopplad. Polisen ringer aldrig så. Den du kopplas till är bedragaren.',
+        todo: 'Lägg på. Vill du kontrollera, ring själv till numret på myndighetens eller bankens webbplats.', matches: sig.press_key });
+    }
+    if (sig.cant_pay_self && (sig.new_number || sig.no_voice)) {
+      flags.push({ id: 'cant_pay_self', w: 2, title: 'Säger att hen inte kommer åt sin bank',
+        why: 'Den som skriver från ett nytt nummer, eller inte kan prata, och säger att BankID eller banken inte fungerar vill oftast att du betalar åt hen. Så brukar ”Hej mamma”-bluffen gå till.',
+        todo: 'Ring personen på det gamla, vanliga numret innan du betalar något.', matches: sig.cant_pay_self });
+    }
+    if (sig.no_voice && sig.money_request) {
+      flags.push({ id: 'no_voice_money', w: 1.5, title: 'Vill ha pengar men kan inte prata',
+        why: 'Den som ber om pengar men inte kan ringa eller prata vill slippa att du hör rösten. Det är typiskt för bedragare som låtsas vara någon du känner.',
+        todo: 'Ring personen på ett nummer du vet stämmer innan du skickar något.', matches: sig.no_voice });
+    }
     if (sig.romance && (sig.money_request || sig.emergency)) {
-      flags.push({ id: 'romance_money', w: 1.5, title: 'Kärleksord och pengar i samma meddelande',
+      flags.push({ id: 'romance_money', w: amounts(text).some(function (a) { return a.v >= 1000; }) ? 2.5 : 1.5, title: 'Kärleksord och pengar i samma meddelande',
         why: 'Bedragare bygger upp en kärleksrelation på nätet och ber sedan om pengar för en resa, en avgift eller ett nödläge.',
         todo: 'Skicka aldrig pengar till någon du bara har träffat på nätet.', matches: sig.romance });
+    }
+    if (sig.qr && (sig.login_words || sig.parcel || sig.pay_words || sig.account_problem || sig.bankid_use || sig.lure)) {
+      flags.push({ id: 'qr_context', w: 1.5, title: 'QR-kod för att logga in, betala eller hämta något',
+        why: 'En QR-kod i ett mejl eller sms döljer vart den leder. Den kan gå till en falsk inloggningssida eller en falsk betalning.',
+        todo: 'Skanna inte koden. Logga in eller betala i appen eller på webbplatsen på egen hand.', matches: sig.qr });
     }
     if (N.mixed.length) {
       flags.push({ id: 'homoglyph', w: 2.5, title: 'Ord med falska bokstäver',
@@ -627,15 +731,19 @@ var Bluffkoll = (function () {
     mentioned.forEach(function (b) { groups[b.g] = true; });
 
     // A bank, authority or debt collector named next to a request is how most fake contacts open.
-    var asks = sig.call_number || sig.account_problem || sig.cards || sig.bankid_use || sig.bankid_fix || sig.code || sig.code_sms || sig.stop_pretext || sig.legal_threat || sig.debt || sig.qr;
+    var strong = sig.call_number || sig.account_problem || sig.cards || sig.bankid_use || sig.bankid_fix || sig.code || sig.code_sms || sig.stop_pretext || sig.legal_threat || sig.qr;
+    var asks = strong || sig.debt;
     var who = found.filter(function (f) { return f.b.g === 'gov' || f.b.g === 'bank' || f.b.g === 'debt'; })[0];
-    if (who && asks) {
+    if (who && (who.b.g === 'debt' ? strong : asks)) {
       flags.push({ id: 'impersonation', w: 1, title: 'Säger sig komma från ' + who.b.name,
         why: 'Banker, myndigheter och inkassobolag ber aldrig om koder, kortuppgifter eller BankID i sms, och avsändarnamn går att förfalska.',
         todo: 'Kontakta ' + who.b.name + ' själv, via deras egen app, webbplats eller ett nummer du letar upp.',
         matches: [{ s: who.i, e: who.i + who.t.length, t: who.t }] });
     }
 
+    // Every link warning gives the same advice, so it is shown once however many link signs there are.
+    var TODO_LINK = 'Klicka inte på länken. Öppna appen eller skriv in den riktiga adressen själv.';
+    var anyUrl = links.some(function (l) { return l.kind === 'url'; });
     var anyBadUrl = false;
     links.forEach(function (l) {
       if (l.status === 'official' || l.status === 'self') return;
@@ -645,24 +753,39 @@ var Bluffkoll = (function () {
       if (l.status === 'lookalike') {
         flags.push({ id: 'link_lookalike', w: 3, title: 'Falsk adress som liknar ' + name,
           why: 'Adressen ser ut att höra till ' + name + ', men den går egentligen till ' + l.reg + '. Det är slutet av adressen som avgör vart du hamnar. Den riktiga adressen till ' + name + ' är ' + real + '.',
-          todo: 'Klicka inte på länken. Öppna appen eller skriv in den riktiga adressen själv.', matches: l.ranges });
+          todo: TODO_LINK, matches: l.ranges });
       } else if (l.status === 'mismatch') {
         flags.push({ id: 'link_mismatch', w: 2.5, title: 'Länken går inte till ' + name,
           why: 'Meddelandet nämner ' + name + ', men länken går till ' + l.reg + '. Den riktiga adressen till ' + name + ' är ' + real + '.',
-          todo: 'Klicka inte på länken. Öppna appen eller skriv in den riktiga adressen själv.', matches: l.ranges });
+          todo: TODO_LINK, matches: l.ranges });
       }
       if (l.kind !== 'url') return;
       anyBadUrl = true;
-      if (l.status === 'short') flags.push({ id: 'link_short', w: 2, title: 'Förkortad länk', why: 'Förkortade länkar döljer vart de egentligen leder.', todo: 'Klicka inte på förkortade länkar från okända avsändare.', matches: l.ranges });
-      if (l.status === 'ip') flags.push({ id: 'link_ip', w: 2.5, title: 'Länken består av siffror', why: 'Riktiga företag och myndigheter använder namn i sina adresser, inte bara siffror.', todo: 'Klicka inte på länken.', matches: l.ranges });
-      if (l.status === 'puny') flags.push({ id: 'link_puny', w: 2.5, title: 'Adressen innehåller dolda specialtecken', why: 'Bokstäver från andra alfabet kan få en falsk adress att se riktig ut.', todo: 'Klicka inte på länken.', matches: l.ranges });
-      if (l.userinfo) flags.push({ id: 'link_userinfo', w: 2.5, title: 'Adressen är byggd för att lura ögat', why: 'Allt som står före @ i en webbadress ignoreras. Länken går egentligen till ' + l.host + '.', todo: 'Klicka inte på länken.', matches: l.ranges });
+      if (l.status === 'short') flags.push({ id: 'link_short', w: 2, title: 'Förkortad länk', why: 'Förkortade länkar döljer vart de egentligen leder.', todo: TODO_LINK, matches: l.ranges });
+      if (l.status === 'ip') flags.push({ id: 'link_ip', w: 2.5, title: 'Länken består av siffror', why: 'Riktiga företag och myndigheter använder namn i sina adresser, inte bara siffror.', todo: TODO_LINK, matches: l.ranges });
+      if (l.status === 'puny') flags.push({ id: 'link_puny', w: 2.5, title: 'Adressen innehåller dolda specialtecken', why: 'Bokstäver från andra alfabet kan få en falsk adress att se riktig ut.', todo: TODO_LINK, matches: l.ranges });
+      if (l.userinfo) flags.push({ id: 'link_userinfo', w: 2.5, title: 'Adressen är byggd för att lura ögat', why: 'Allt som står före @ i en webbadress ignoreras. Länken går egentligen till ' + l.host + '.', todo: TODO_LINK, matches: l.ranges });
       if (l.odd) flags.push({ id: 'link_tld', w: 1.5, title: 'Ovanlig adressändelse (.' + l.tld + ')', why: 'Adresser som slutar på till exempel .xyz, .top eller .lat är billiga att registrera och vanliga hos bluffsidor.', todo: null, matches: l.ranges });
     });
     if (anyBadUrl && sig.voicemail) {
       flags.push({ id: 'voicemail_link', w: 1.5, title: 'Röstmeddelande med länk',
         why: 'Röstmeddelanden lyssnar du på i telefonen. Ett sms med en länk till ett röstmeddelande är ett vanligt knep för att få dig att installera en skadlig app.',
         todo: 'Öppna inte länken. Lyssna på röstbrevlådan som du brukar.', matches: sig.voicemail });
+    }
+    // Some pasted e-mails have no address left, only "klicka på länken nedan" or a button text.
+    var hint = !anyUrl && sig.link_hint;
+    var aboutAny = sig.parcel || sig.fee_words || small.length || sig.lure || sig.account_problem || sig.cards || sig.bankid_use || sig.bankid_fix ||
+      sig.debt || sig.swish_receive || sig.money_request || sig.legal_threat || sig.payment_request || sig.code || sig.code_sms || sig.investment || sig.easy_money ||
+      sig.mistaken_payment || sig.login_words || sig.pay_words || groups.bank || groups.gov || groups.parcel || groups.pay || groups.debt || groups.id;
+    if (hint && aboutAny) {
+      flags.push({ id: 'link_hidden', w: 2, title: 'Ber dig klicka på en länk eller knapp',
+        why: 'Meddelandet vill att du klickar dig vidare för att betala, logga in eller lämna uppgifter. Det är så nästan alla bluffmejl fungerar.',
+        todo: 'Klicka inte på något i meddelandet. Öppna appen eller skriv in den riktiga adressen själv.', matches: sig.link_hint });
+    }
+    if (sig.rebook && (anyBadUrl || hint)) {
+      flags.push({ id: 'rebook_link', w: 2, title: 'Vill att du bokar om en leverans via en länk',
+        why: 'Fraktbolagen låter dig boka om i sin egen app. Ett meddelande med en länk för att boka ny tid är ett vanligt sätt att lura till sig kortuppgifter.',
+        todo: 'Boka om i fraktbolagets egen app, inte via länken.', matches: sig.rebook });
     }
     if (anyBadUrl) {
       var ranges = [];
@@ -674,10 +797,26 @@ var Bluffkoll = (function () {
       flags.push(about
         ? { id: 'link', w: 2.5, title: 'Länk i ett meddelande om pengar, paket eller konto',
           why: 'Nästan alla bluff-sms har en länk till en falsk sida där du ska betala, logga in eller lämna uppgifter. Riktiga företag och myndigheter ber dig hellre öppna appen eller webbplatsen själv.',
-          todo: 'Klicka inte på länken. Gå till webbplatsen eller appen på egen hand.', matches: ranges }
+          todo: TODO_LINK, matches: ranges }
         : { id: 'link', w: 1, title: 'Innehåller en länk',
           why: 'Länkar i oväntade meddelanden är det vanligaste sättet att lura folk till falska sidor.',
-          todo: 'Klicka inte på länken. Gå till webbplatsen eller appen på egen hand.', matches: ranges });
+          todo: TODO_LINK, matches: ranges });
+    }
+
+    var appOnly = /(?:^|[^\p{L}])(?:i|via|under) (?:\p{L}+[- ])?app(?:en)?(?![\p{L}])/iu.test(text);
+    if (sig.bankid_fix && appOnly && !anyBadUrl && !sig.link_hint && !sig.call_number && !sig.qr && !sig.cards && !sig.code && !sig.code_sms && !sig.bankid_use && !sig.swish_receive && !sig.chat_switch) {
+      flags.forEach(function (f) { if (f.id === 'bankid_fix') f.w = 1; });
+      if (!(sig.account_problem || sig.stop_pretext || sig.legal_threat || sig.debt)) flags = flags.filter(function (f) { return f.id !== 'impersonation'; });
+    }
+    if (sig.chat_switch && (sig.job || sig.easy_money || sig.investment || sig.task || sig.guaranteed)) flags.forEach(function (f) { if (f.id === 'chat_switch') f.w = 2; });
+    var acts = anyBadUrl || sig.link_hint || sig.cards || sig.code || sig.code_sms || sig.bankid_use || sig.bankid_fix || sig.call_number || sig.swish_receive ||
+      sig.qr || sig.chat_switch || sig.reply_ask || sig.advance_fee || sig.gift_card || flags.some(function (f) { return f.id === 'small_fee'; });
+    // Only refunds: a prize you never entered is suspicious even without a link.
+    var refundOnly = sig.lure && sig.lure.every(function (m) { return /återb|tillbaka|betalat för mycket|överskjutande|refund/iu.test(m.t); });
+    if (!acts && refundOnly) flags.forEach(function (f) { if (f.id === 'lure') f.w = 1; });
+    // A landlord who cannot show the home and sends the keys by post: each alone calls for care, together they are the scam.
+    if (sig.rental && /nyck/iu.test(text) && /(?:kan|går) inte (?:att )?visa|visning (?:går inte|är inte möjlig|kan inte ordnas)/iu.test(text)) {
+      flags.forEach(function (f) { if (f.id === 'rental') f.w = 3; });
     }
 
     // One flag per id (link flags can repeat for several links; keep the strongest wording once).
@@ -693,8 +832,16 @@ var Bluffkoll = (function () {
     flags.forEach(function (f) { score += f.w; if (f.w >= 3) crit = true; ids[f.id] = true; });
     var level = crit || score >= 4 ? 'high' : score >= 2 ? 'medium' : 'low';
 
-    var todos = [];
-    flags.forEach(function (f) { if (f.todo && todos.indexOf(f.todo) === -1) todos.push(f.todo); });
+    // Advice that opens with the same three words says the same thing in other words ("Ring personen på ..."), so it is
+    // shown once. The general "take it easy" comes last, so that the specific steps are the ones shown.
+    var todos = [], firsts = [];
+    flags.filter(function (f) { return f.id !== 'urgency'; }).concat(flags.filter(function (f) { return f.id === 'urgency'; })).forEach(function (f) {
+      if (!f.todo) return;
+      var first = f.todo.toLowerCase().split(/[ ,.]+/).slice(0, 3).join(' ');
+      if (firsts.indexOf(first) !== -1) return;
+      firsts.push(first);
+      todos.push(f.todo);
+    });
     todos = todos.slice(0, 3);
 
     // Back from the normalized text to the original, so marks land on what the person pasted.
@@ -817,6 +964,13 @@ var Bluffkoll = (function () {
     Array.prototype.forEach.call(verdict.children, function (el) { if (!el.querySelector('[data-speak]')) parts.push(el.innerText); });
     var todo = box.querySelector('.list');
     if (todo) parts.push('Gör så här. ' + todo.innerText);
+    // I samtalsdelen står råden under raderna man har kryssat i.
+    if (box.classList.contains('callresult')) {
+      $$('#panel-samtal input:checked').forEach(function (i) {
+        var note = i.nextElementSibling ? i.nextElementSibling.querySelector('.check-note') : null;
+        if (note && i.value !== 'caller') parts.push(note.innerText);
+      });
+    }
     var u = new window.SpeechSynthesisUtterance(parts.join('. ').replace(/\s+/g, ' '));
     u.lang = 'sv-SE';
     var voices = synth.getVoices();
@@ -839,14 +993,24 @@ var Bluffkoll = (function () {
     vanligt: 'Hej! Påminnelse om din tid hos tandläkaren tisdag 12 november kl. 14.30. Välkommen! Behöver du avboka, hör av dig senast dagen innan.'
   };
   var VERDICT = {
-    high: { title: 'Det här är troligen en bluff', sub: 'Klicka inte på länkar, svara inte och ring inte upp.' },
-    medium: { title: 'Var försiktig', sub: 'Meddelandet har tecken som är vanliga i bluffar. Kontrollera med avsändaren på ett sätt du själv väljer innan du gör något.' },
-    low: { title: 'Inga kända varningstecken', sub: 'Det betyder inte att meddelandet är säkert, bara att vi inte känner igen knepet. Väntade du dig inte meddelandet? Klicka inte på länkar och lämna inga uppgifter förrän du har kontrollerat avsändaren på ett sätt du själv väljer.' }
+    high: { title: 'Det här är troligen en bluff', sub: 'Klicka inte på länkar och svara inte. Ring bara nummer som du redan har eller själv har letat upp.' },
+    medium: { title: 'Var försiktig', sub: 'Meddelandet har tecken som är vanliga i bluffar. Gör inget av det som meddelandet ber om förrän du själv har kontaktat avsändaren, till exempel på ett nummer du har letat upp.' },
+    low: { title: 'Inga tydliga varningstecken', sub: 'Det betyder inte att meddelandet är säkert. Väntade du dig inte meddelandet? Klicka inte på länkar och lämna inga uppgifter förrän du själv har kontaktat avsändaren, till exempel på ett nummer du har letat upp.' }
   };
   // Står i varje svar: den som redan har agerat ska inte radera bevisen, och ska hitta hjälpen direkt.
+  // Ett vanligt meddelande ska inte låta som ett brott, men vägen till hjälpen finns kvar om något ändå känns fel.
   var ALREADY = '<p class="verdict-more">Har du redan klickat, betalat eller lämnat uppgifter? Radera inte meddelandet, det kan behövas som bevis. <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>';
+  var ALREADY_LOW = '<p class="verdict-more">Har du redan klickat eller lämnat uppgifter och känns något fel? <a href="#lurad" data-goto="lurad">Se vad du ska göra</a>.</p>';
 
-  var msg = $('#msg'), out = $('#result'), exKey = null, helpedFor = null;
+  var msg = $('#msg'), out = $('#result'), exKey = null, helpedFor = null, shownFor = null;
+  var resultStatus = $('#result-status');
+  var coarse = false;
+  try { coarse = window.matchMedia('(pointer: coarse)').matches; } catch (e) {}
+  // Skärmläsare får bara beskedet upplästa, inte hela svaret med det inklistrade meddelandet.
+  function announce(text) {
+    resultStatus.textContent = '';
+    if (text) setTimeout(function () { resultStatus.textContent = text; }, 60);
+  }
 
   // Varningstecknen numreras i den ordning de står i meddelandet, så att markering och förklaring hör ihop.
   function numbered(flags) {
@@ -892,7 +1056,7 @@ var Bluffkoll = (function () {
     }
     if (r.truncated) h += '<p class="trunc">Meddelandet är mycket långt. Vi har bara kollat de första 20&nbsp;000 tecknen.</p>';
     h += '<div class="verdict ' + r.level + '" id="verdict"><h3 class="verdict-title">' + V.title + '</h3><p>' + V.sub + '</p>' +
-      (r.type ? '<p class="verdict-kind">Upplägget liknar: <strong>' + esc(r.type) + '</strong></p>' : '') + ALREADY + speakButton() + '</div>';
+      (r.type ? '<p class="verdict-kind">Upplägget liknar: <strong>' + esc(r.type) + '</strong></p>' : '') + (r.level === 'low' ? ALREADY_LOW : ALREADY) + speakButton() + '</div>';
     var official = r.links.filter(function (l) { return l.status === 'official' && l.kind === 'url'; });
     if (official.length && r.level !== 'high') {
       h += '<p class="official">Länken går till <strong>' + esc(official[0].reg) + '</strong>, som är den riktiga adressen till ' + esc(official[0].brand.name) +
@@ -907,8 +1071,6 @@ var Bluffkoll = (function () {
       h += '<h4>' + (r.level === 'low' ? 'Det här reagerade vi på' : 'Varningstecknen i meddelandet') + '</h4>' +
         '<div class="marked" id="hl">' + highlight(text, flags) + '</div>' +
         '<ol class="key">' + flags.map(function (f) { return '<li><strong>' + esc(f.title) + '.</strong> ' + esc(f.why) + '</li>'; }).join('') + '</ol>';
-    } else {
-      h += '<p class="none">Vi hittade inga av de vanligaste varningstecknen.</p>';
     }
     if (asked && !exKey && window.goatcounter) {
       h += helpedFor === text ? '<p class="helpful">Tack för att du svarade.</p>'
@@ -918,15 +1080,20 @@ var Bluffkoll = (function () {
   }
 
   var LEVEL_EVENT = { high: 'kollat-troligen-bluff', medium: 'kollat-var-forsiktig', low: 'kollat-inga-tecken' }, lastCounted = '';
-  function run(scroll) {
+  function run(scroll, pasted) {
     if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     var r = Bluffkoll.analyze(msg.value);
     render(r, msg.value, scroll);
+    shownFor = r.level === 'empty' ? null : msg.value;
+    announce(r.level === 'empty' ? 'Klistra in eller skriv av ett meddelande i rutan först.' : 'Svar: ' + VERDICT[r.level].title + '.');
     // Ett eget meddelande räknas en gång, med svaret det fick. Exempel och text under skrivning räknas inte.
     if (scroll && !exKey && r.level !== 'empty' && msg.value !== lastCounted) { lastCounted = msg.value; track(LEVEL_EVENT[r.level]); }
     if (scroll) {
       var v = $('#verdict');
-      if (v && v.scrollIntoView) v.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
+      // Efter inklistring på en telefon täcker tangentbordet svaret: stäng det och visa svaret överst.
+      var top = pasted && coarse;
+      if (top) msg.blur();
+      if (v && v.scrollIntoView) v.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: top ? 'start' : 'nearest' });
     }
   }
   function markExamples() {
@@ -945,14 +1112,14 @@ var Bluffkoll = (function () {
     if (exKey) { exKey = null; markExamples(); }
     if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     ocrStatus.textContent = '';
-    if (out.innerHTML) out.innerHTML = msg.value.trim() ? '<p class="empty">Tryck på Kolla meddelandet när du har skrivit klart.</p>' : '';
+    if (out.innerHTML) { out.innerHTML = msg.value.trim() ? '<p class="empty">Tryck på Kolla meddelandet när du har skrivit klart.</p>' : ''; announce(''); }
   });
-  // Ett inklistrat meddelande ersätter exemplet i stället för att hamna mitt i det.
+  // Ett inklistrat meddelande ersätter exemplet, eller meddelandet som just fick ett svar, i stället för att hamna mitt i det.
   msg.addEventListener('focus', function () { if (exKey) msg.select(); });
   msg.addEventListener('paste', function (e) {
     var pasted = e.clipboardData ? e.clipboardData.getData('text') : '';
-    if (exKey && pasted) { e.preventDefault(); msg.value = pasted; }
-    setTimeout(function () { exKey = null; markExamples(); ocrStatus.textContent = ''; run(true); }, 0);
+    if (pasted && (exKey || (shownFor !== null && msg.value === shownFor))) { e.preventDefault(); msg.value = pasted; }
+    setTimeout(function () { exKey = null; markExamples(); ocrStatus.textContent = ''; run(true, true); }, 0);
   });
   $('#check').addEventListener('click', function () { run(true); });
   out.addEventListener('click', function (e) {
@@ -964,7 +1131,7 @@ var Bluffkoll = (function () {
     if (p) p.textContent = 'Tack för att du svarade.';
   });
   $('#clear').addEventListener('click', function () {
-    msg.value = ''; exKey = null; markExamples(); out.innerHTML = ''; ocrStatus.textContent = ''; msg.focus();
+    msg.value = ''; exKey = null; shownFor = null; markExamples(); out.innerHTML = ''; announce(''); ocrStatus.textContent = ''; msg.focus();
   });
 
   /* Skärmbild: texten läses av i webbläsaren, bilden skickas ingenstans */
@@ -1062,7 +1229,7 @@ var Bluffkoll = (function () {
     money: 'Det finns inga säkra konton. Flytta inga pengar.',
     remote: 'Installera ingenting. Har du redan gjort det: koppla bort internet och stäng av enheten.',
     pickup: 'Polisen och banken hämtar aldrig kort, pengar eller smycken. Öppna inte dörren. Ring 112 om någon är på väg.',
-    pressure: 'Brådska är bedragarens viktigaste verktyg. Du har alltid tid att lägga på.',
+    pressure: 'Brådska är bedragarens viktigaste verktyg. En riktig bank eller myndighet ger dig tid.',
     offer: 'Garanterade vinster och pengar som ”väntar på dig” är lockbeten.',
     family: 'Ring din anhörige på det vanliga numret och fråga efter ert familjeord.'
   };
@@ -1079,14 +1246,18 @@ var Bluffkoll = (function () {
       return;
     }
     trackOnce('samtal-lagg-pa');
-    callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det här är precis så bedragare arbetar. En riktig bank, polis eller myndighet ber dig aldrig om det här.</p><ul>' +
-      stop.map(function (k) { return '<li>' + esc(TIPS[k]) + '</li>'; }).join('') +
-      '</ul><p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' + speakButton() + '</div>';
+    // Råden står redan under raderna man har kryssat i, så rutan upprepar dem inte.
+    callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det du har kryssat i är precis så bedragare arbetar. En riktig bank, polis eller myndighet ber dig aldrig om det här. Vill du kontrollera, ring själv upp på ett nummer du har letat upp, till exempel på bankens webbplats eller på ditt kort.</p>' +
+      (stop.indexOf('pickup') !== -1 ? '<p class="verdict-more"><strong>Öppna inte dörren.</strong> Ring 112 om någon är på väg hem till dig.</p>' : '') +
+      '<p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' + speakButton() + '</div>';
   }
-  // Rådet visas också direkt under varje ikryssad rad, så att det syns där man är.
+  // Rådet visas direkt under varje ikryssad rad, så att det syns där man är. Varningarna börjar med det viktigaste: lägg på.
   $$('#panel-samtal input').forEach(function (i) {
     var span = i.nextElementSibling;
-    if (span && TIPS[i.value]) span.insertAdjacentHTML('beforeend', '<span class="check-note' + (i.value === 'caller' ? ' calm' : '') + '">' + esc(TIPS[i.value]) + '</span>');
+    if (span && TIPS[i.value]) {
+      span.insertAdjacentHTML('beforeend', i.value === 'caller' ? '<span class="check-note calm">' + esc(TIPS.caller) + '</span>'
+        : '<span class="check-note"><strong>Lägg på.</strong> ' + esc(TIPS[i.value]) + '</span>');
+    }
     i.addEventListener('change', updateCall);
   });
   callReset.addEventListener('click', function () {

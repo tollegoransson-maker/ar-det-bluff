@@ -91,6 +91,13 @@
     Array.prototype.forEach.call(verdict.children, function (el) { if (!el.querySelector('[data-speak]')) parts.push(el.innerText); });
     var todo = box.querySelector('.list');
     if (todo) parts.push('Gör så här. ' + todo.innerText);
+    // I samtalsdelen står råden under raderna man har kryssat i.
+    if (box.classList.contains('callresult')) {
+      $$('#panel-samtal input:checked').forEach(function (i) {
+        var note = i.nextElementSibling ? i.nextElementSibling.querySelector('.check-note') : null;
+        if (note && i.value !== 'caller') parts.push(note.innerText);
+      });
+    }
     var u = new window.SpeechSynthesisUtterance(parts.join('. ').replace(/\s+/g, ' '));
     u.lang = 'sv-SE';
     var voices = synth.getVoices();
@@ -113,14 +120,24 @@
     vanligt: 'Hej! Påminnelse om din tid hos tandläkaren tisdag 12 november kl. 14.30. Välkommen! Behöver du avboka, hör av dig senast dagen innan.'
   };
   var VERDICT = {
-    high: { title: 'Det här är troligen en bluff', sub: 'Klicka inte på länkar, svara inte och ring inte upp.' },
-    medium: { title: 'Var försiktig', sub: 'Meddelandet har tecken som är vanliga i bluffar. Kontrollera med avsändaren på ett sätt du själv väljer innan du gör något.' },
-    low: { title: 'Inga kända varningstecken', sub: 'Det betyder inte att meddelandet är säkert, bara att vi inte känner igen knepet. Väntade du dig inte meddelandet? Klicka inte på länkar och lämna inga uppgifter förrän du har kontrollerat avsändaren på ett sätt du själv väljer.' }
+    high: { title: 'Det här är troligen en bluff', sub: 'Klicka inte på länkar och svara inte. Ring bara nummer som du redan har eller själv har letat upp.' },
+    medium: { title: 'Var försiktig', sub: 'Meddelandet har tecken som är vanliga i bluffar. Gör inget av det som meddelandet ber om förrän du själv har kontaktat avsändaren, till exempel på ett nummer du har letat upp.' },
+    low: { title: 'Inga tydliga varningstecken', sub: 'Det betyder inte att meddelandet är säkert. Väntade du dig inte meddelandet? Klicka inte på länkar och lämna inga uppgifter förrän du själv har kontaktat avsändaren, till exempel på ett nummer du har letat upp.' }
   };
   // Står i varje svar: den som redan har agerat ska inte radera bevisen, och ska hitta hjälpen direkt.
+  // Ett vanligt meddelande ska inte låta som ett brott, men vägen till hjälpen finns kvar om något ändå känns fel.
   var ALREADY = '<p class="verdict-more">Har du redan klickat, betalat eller lämnat uppgifter? Radera inte meddelandet, det kan behövas som bevis. <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>';
+  var ALREADY_LOW = '<p class="verdict-more">Har du redan klickat eller lämnat uppgifter och känns något fel? <a href="#lurad" data-goto="lurad">Se vad du ska göra</a>.</p>';
 
-  var msg = $('#msg'), out = $('#result'), exKey = null, helpedFor = null;
+  var msg = $('#msg'), out = $('#result'), exKey = null, helpedFor = null, shownFor = null;
+  var resultStatus = $('#result-status');
+  var coarse = false;
+  try { coarse = window.matchMedia('(pointer: coarse)').matches; } catch (e) {}
+  // Skärmläsare får bara beskedet upplästa, inte hela svaret med det inklistrade meddelandet.
+  function announce(text) {
+    resultStatus.textContent = '';
+    if (text) setTimeout(function () { resultStatus.textContent = text; }, 60);
+  }
 
   // Varningstecknen numreras i den ordning de står i meddelandet, så att markering och förklaring hör ihop.
   function numbered(flags) {
@@ -166,7 +183,7 @@
     }
     if (r.truncated) h += '<p class="trunc">Meddelandet är mycket långt. Vi har bara kollat de första 20&nbsp;000 tecknen.</p>';
     h += '<div class="verdict ' + r.level + '" id="verdict"><h3 class="verdict-title">' + V.title + '</h3><p>' + V.sub + '</p>' +
-      (r.type ? '<p class="verdict-kind">Upplägget liknar: <strong>' + esc(r.type) + '</strong></p>' : '') + ALREADY + speakButton() + '</div>';
+      (r.type ? '<p class="verdict-kind">Upplägget liknar: <strong>' + esc(r.type) + '</strong></p>' : '') + (r.level === 'low' ? ALREADY_LOW : ALREADY) + speakButton() + '</div>';
     var official = r.links.filter(function (l) { return l.status === 'official' && l.kind === 'url'; });
     if (official.length && r.level !== 'high') {
       h += '<p class="official">Länken går till <strong>' + esc(official[0].reg) + '</strong>, som är den riktiga adressen till ' + esc(official[0].brand.name) +
@@ -181,8 +198,6 @@
       h += '<h4>' + (r.level === 'low' ? 'Det här reagerade vi på' : 'Varningstecknen i meddelandet') + '</h4>' +
         '<div class="marked" id="hl">' + highlight(text, flags) + '</div>' +
         '<ol class="key">' + flags.map(function (f) { return '<li><strong>' + esc(f.title) + '.</strong> ' + esc(f.why) + '</li>'; }).join('') + '</ol>';
-    } else {
-      h += '<p class="none">Vi hittade inga av de vanligaste varningstecknen.</p>';
     }
     if (asked && !exKey && window.goatcounter) {
       h += helpedFor === text ? '<p class="helpful">Tack för att du svarade.</p>'
@@ -192,15 +207,20 @@
   }
 
   var LEVEL_EVENT = { high: 'kollat-troligen-bluff', medium: 'kollat-var-forsiktig', low: 'kollat-inga-tecken' }, lastCounted = '';
-  function run(scroll) {
+  function run(scroll, pasted) {
     if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     var r = Bluffkoll.analyze(msg.value);
     render(r, msg.value, scroll);
+    shownFor = r.level === 'empty' ? null : msg.value;
+    announce(r.level === 'empty' ? 'Klistra in eller skriv av ett meddelande i rutan först.' : 'Svar: ' + VERDICT[r.level].title + '.');
     // Ett eget meddelande räknas en gång, med svaret det fick. Exempel och text under skrivning räknas inte.
     if (scroll && !exKey && r.level !== 'empty' && msg.value !== lastCounted) { lastCounted = msg.value; track(LEVEL_EVENT[r.level]); }
     if (scroll) {
       var v = $('#verdict');
-      if (v && v.scrollIntoView) v.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
+      // Efter inklistring på en telefon täcker tangentbordet svaret: stäng det och visa svaret överst.
+      var top = pasted && coarse;
+      if (top) msg.blur();
+      if (v && v.scrollIntoView) v.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: top ? 'start' : 'nearest' });
     }
   }
   function markExamples() {
@@ -219,14 +239,14 @@
     if (exKey) { exKey = null; markExamples(); }
     if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     ocrStatus.textContent = '';
-    if (out.innerHTML) out.innerHTML = msg.value.trim() ? '<p class="empty">Tryck på Kolla meddelandet när du har skrivit klart.</p>' : '';
+    if (out.innerHTML) { out.innerHTML = msg.value.trim() ? '<p class="empty">Tryck på Kolla meddelandet när du har skrivit klart.</p>' : ''; announce(''); }
   });
-  // Ett inklistrat meddelande ersätter exemplet i stället för att hamna mitt i det.
+  // Ett inklistrat meddelande ersätter exemplet, eller meddelandet som just fick ett svar, i stället för att hamna mitt i det.
   msg.addEventListener('focus', function () { if (exKey) msg.select(); });
   msg.addEventListener('paste', function (e) {
     var pasted = e.clipboardData ? e.clipboardData.getData('text') : '';
-    if (exKey && pasted) { e.preventDefault(); msg.value = pasted; }
-    setTimeout(function () { exKey = null; markExamples(); ocrStatus.textContent = ''; run(true); }, 0);
+    if (pasted && (exKey || (shownFor !== null && msg.value === shownFor))) { e.preventDefault(); msg.value = pasted; }
+    setTimeout(function () { exKey = null; markExamples(); ocrStatus.textContent = ''; run(true, true); }, 0);
   });
   $('#check').addEventListener('click', function () { run(true); });
   out.addEventListener('click', function (e) {
@@ -238,7 +258,7 @@
     if (p) p.textContent = 'Tack för att du svarade.';
   });
   $('#clear').addEventListener('click', function () {
-    msg.value = ''; exKey = null; markExamples(); out.innerHTML = ''; ocrStatus.textContent = ''; msg.focus();
+    msg.value = ''; exKey = null; shownFor = null; markExamples(); out.innerHTML = ''; announce(''); ocrStatus.textContent = ''; msg.focus();
   });
 
   /* Skärmbild: texten läses av i webbläsaren, bilden skickas ingenstans */
@@ -336,7 +356,7 @@
     money: 'Det finns inga säkra konton. Flytta inga pengar.',
     remote: 'Installera ingenting. Har du redan gjort det: koppla bort internet och stäng av enheten.',
     pickup: 'Polisen och banken hämtar aldrig kort, pengar eller smycken. Öppna inte dörren. Ring 112 om någon är på väg.',
-    pressure: 'Brådska är bedragarens viktigaste verktyg. Du har alltid tid att lägga på.',
+    pressure: 'Brådska är bedragarens viktigaste verktyg. En riktig bank eller myndighet ger dig tid.',
     offer: 'Garanterade vinster och pengar som ”väntar på dig” är lockbeten.',
     family: 'Ring din anhörige på det vanliga numret och fråga efter ert familjeord.'
   };
@@ -353,14 +373,18 @@
       return;
     }
     trackOnce('samtal-lagg-pa');
-    callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det här är precis så bedragare arbetar. En riktig bank, polis eller myndighet ber dig aldrig om det här.</p><ul>' +
-      stop.map(function (k) { return '<li>' + esc(TIPS[k]) + '</li>'; }).join('') +
-      '</ul><p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' + speakButton() + '</div>';
+    // Råden står redan under raderna man har kryssat i, så rutan upprepar dem inte.
+    callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det du har kryssat i är precis så bedragare arbetar. En riktig bank, polis eller myndighet ber dig aldrig om det här. Vill du kontrollera, ring själv upp på ett nummer du har letat upp, till exempel på bankens webbplats eller på ditt kort.</p>' +
+      (stop.indexOf('pickup') !== -1 ? '<p class="verdict-more"><strong>Öppna inte dörren.</strong> Ring 112 om någon är på väg hem till dig.</p>' : '') +
+      '<p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' + speakButton() + '</div>';
   }
-  // Rådet visas också direkt under varje ikryssad rad, så att det syns där man är.
+  // Rådet visas direkt under varje ikryssad rad, så att det syns där man är. Varningarna börjar med det viktigaste: lägg på.
   $$('#panel-samtal input').forEach(function (i) {
     var span = i.nextElementSibling;
-    if (span && TIPS[i.value]) span.insertAdjacentHTML('beforeend', '<span class="check-note' + (i.value === 'caller' ? ' calm' : '') + '">' + esc(TIPS[i.value]) + '</span>');
+    if (span && TIPS[i.value]) {
+      span.insertAdjacentHTML('beforeend', i.value === 'caller' ? '<span class="check-note calm">' + esc(TIPS.caller) + '</span>'
+        : '<span class="check-note"><strong>Lägg på.</strong> ' + esc(TIPS[i.value]) + '</span>');
+    }
     i.addEventListener('change', updateCall);
   });
   callReset.addEventListener('click', function () {

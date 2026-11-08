@@ -65,6 +65,8 @@ const SITE = 'https://tollegoransson-maker.github.io/ar-det-bluff/';
   ['R3 middag', 'Hej mamma! Kommer vid sex. Ska jag köpa med mig något? Kram', 'low'],
   ['R4 räkning', 'Hej! Fakturan för oktober på 1 250 kr finns nu i din internetbank. Förfallodag 30 november.', 'low']
 ].forEach(c => cases.push(c));
+// Current scam types and real messages from the first review round.
+require(path.join(__dirname, 'regress-extra.cjs')).forEach(c => cases.push(c));
 
 // Example sentences in the page's own table must at least get a warning.
 for (const m of page.matchAll(/<th scope="row">([^<]+)<\/th><td class="say"[^>]*>”([^<]+)”<\/td>/g)) {
@@ -78,7 +80,11 @@ for (const [name, text, exp] of cases) {
   const r = Bluffkoll.analyze(text);
   const ms = Number(process.hrtime.bigint() - t0) / 1e6;
   slowest = Math.max(slowest, ms);
-  const pass = ok(r.level, exp);
+  // The two pieces of advice the page shows must not open with the same three words (the same advice in other words).
+  const shown = r.todos.slice(0, 2).map(t => t.toLowerCase().split(/[ ,.]+/).slice(0, 3).join(' '));
+  const dupTodo = shown.length === 2 && shown[0] === shown[1];
+  if (dupTodo) console.log(`FAIL ${name}: samma råd två gånger: ${r.todos.slice(0, 2).join(' | ')}`);
+  const pass = ok(r.level, exp) && !dupTodo;
   if (!pass) failed++;
   if (/^S\d/.test(name)) { scams++; if (r.level === 'high') highScams++; }
   if (/^G\d/.test(name)) { reals++; if (r.level === 'low') lowReals++; }

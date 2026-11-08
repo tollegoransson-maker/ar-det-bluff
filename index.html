@@ -156,7 +156,7 @@ textarea { min-height: 9.5rem; resize: vertical; }
 .result:empty { display: none; }
 .example-note { margin: 0 0 12px; color: var(--ink-2); font-size: 1rem; }
 .verdict { padding: 22px 24px 24px; border-radius: 3px; background: var(--v-bg); color: var(--v-ink); }
-.verdict.high { --v-bg: var(--danger); --v-ink: var(--on-danger); }
+.verdict.high { --v-bg: var(--danger); --v-ink: var(--on-danger); --focus: var(--on-danger); }
 .verdict.medium { --v-bg: var(--caution-bg); --v-ink: var(--caution-ink); }
 /* Inga träffar är inget friande besked: neutral grå, inte lugnande blå eller grön. */
 .verdict.low { --v-bg: var(--surface); --v-ink: var(--ink); border-left: 5px solid var(--ink-2); }
@@ -184,7 +184,6 @@ textarea { min-height: 9.5rem; resize: vertical; }
 .key li + li { margin-top: 8px; }
 .key li::marker { font-weight: 700; color: var(--ink); }
 .key strong { color: var(--ink); }
-.none { margin: 20px 0 0; }
 .empty { margin: 0; color: var(--ink-2); }
 
 /* Samtal */
@@ -209,11 +208,13 @@ textarea { min-height: 9.5rem; resize: vertical; }
 
 /* Lurad */
 .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
-.steps li { counter-increment: step; display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: 8px; padding: 18px 0; border-top: 1px solid var(--line); }
-.steps li:last-child { border-bottom: 1px solid var(--line); }
-.steps li::before { content: counter(step); font-family: var(--font-head); font-weight: 700; font-size: 1.5rem; line-height: 1.2; }
+.steps > li { counter-increment: step; display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: 8px; padding: 18px 0; border-top: 1px solid var(--line); }
+.steps > li:last-child { border-bottom: 1px solid var(--line); }
+.steps > li::before { content: counter(step); font-family: var(--font-head); font-weight: 700; font-size: 1.5rem; line-height: 1.2; }
 .steps h3 { margin: 0 0 4px; font-size: 1.1875rem; line-height: 1.35; }
 .steps p { margin: 0; }
+.steps ul { margin: 8px 0 0; padding-left: 1.2em; }
+.steps ul li + li { margin-top: 6px; }
 .num { font-weight: 700; white-space: nowrap; }
 
 /* Avsnitt */
@@ -262,7 +263,18 @@ html.big { font-size: 118.75%; }
 .head-tools .linkbtn { font-weight: 600; }
 .head-tools { margin-left: auto; }
 .wordmark, .head-tools .linkbtn, .head-tools a { white-space: nowrap; }
-.speak { margin-top: 14px; }
+/* Knappar som står för sig själva får minst 44 px höjd, så att de är lätta att träffa med fingret. */
+.head-tools .linkbtn, .head-tools a { display: inline-flex; align-items: center; min-height: 44px; }
+.actions .linkbtn, .callreset .linkbtn, .speak .linkbtn { min-height: 44px; }
+#bigtext[aria-pressed="true"] { text-decoration: underline; }
+#bigtext[aria-pressed="true"]::after { content: " ✓"; content: " ✓" / ""; }
+.nw { white-space: nowrap; }
+.speak, .verdict .speak { margin-top: 14px; }
+.howto { margin: -4px 0 10px; }
+.howto summary { padding: 8px 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.howto summary:hover { color: var(--accent-hover); }
+.howto ol { margin: 4px 0 8px; padding-left: 1.4em; }
+.howto li + li { margin-top: 4px; }
 .verdict .panel-link { color: inherit; font-weight: 700; }
 .ocr-line { margin: 18px 0 0; color: var(--ink-2); font-size: 1.0625rem; }
 .ocr-status { margin: 10px 0 0; font-weight: 600; }
@@ -324,12 +336,12 @@ html.big { font-size: 118.75%; }
 /* Smala skärmar och stor text: flikarna ställs under varandra så att långa ord får plats */
 @media (max-width: 420px) {
   .tabs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .tab { margin: 0; padding: 10px 0 10px 12px; border-bottom: 0; border-left: 4px solid transparent; }
+  .tab { margin: 0; padding: 12px 0 12px 12px; border-bottom: 0; border-left: 4px solid transparent; }
   .tab[aria-selected="true"] { border-left-color: var(--ink); }
 }
 @media (max-width: 600px) {
   html.big .tabs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
-  html.big .tab { margin: 0; padding: 10px 0 10px 12px; border-bottom: 0; border-left: 4px solid transparent; }
+  html.big .tab { margin: 0; padding: 12px 0 12px 12px; border-bottom: 0; border-left: 4px solid transparent; }
   html.big .tab[aria-selected="true"] { border-left-color: var(--ink); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -361,15 +373,25 @@ html.big { font-size: 118.75%; }
       </div>
 
       <div class="panel" role="tabpanel" id="panel-meddelande" aria-labelledby="tab-meddelande">
+        <h2 class="sr">Kolla ett meddelande</h2>
         <label class="label" for="msg">Klistra in meddelandet</label>
         <p class="hint" id="msg-hint">Kopiera texten från sms:et, mejlet eller chatten och klistra in den här.</p>
+        <details class="howto">
+          <summary>Hur kopierar jag ett sms?</summary>
+          <ol>
+            <li>Öppna sms:et och håll fingret på meddelandet tills en meny visas.</li>
+            <li>Tryck på Kopiera.</li>
+            <li>Gå tillbaka hit, håll fingret i rutan och tryck på Klistra in.</li>
+          </ol>
+        </details>
         <textarea id="msg" rows="6" spellcheck="false" autocomplete="off" aria-describedby="msg-hint"></textarea>
         <div class="actions">
           <button class="btn" id="check" type="button">Kolla meddelandet</button>
           <button class="linkbtn" id="clear" type="button">Töm rutan</button>
         </div>
-        <div class="result" id="result" aria-live="polite"></div>
-        <p class="ocr-line" id="ocr" hidden>Har du bara en skärmbild? <button class="linkbtn" id="ocr-pick" type="button">Välj en skärmbild</button>, så läser vi av texten. Bilden lämnar inte din enhet.</p>
+        <p class="sr" id="result-status" role="status"></p>
+        <div class="result" id="result"></div>
+        <p class="ocr-line" id="ocr" hidden>Har du bara en skärmbild? <span class="nw"><button class="linkbtn" id="ocr-pick" type="button">Välj en skärmbild</button>,</span> så läser vi av texten. Bilden lämnar inte din enhet.</p>
         <input type="file" id="ocr-file" accept="image/*" hidden>
         <p class="ocr-status" id="ocr-status" role="status"></p>
         <p class="examples">Inget eget meddelande till hands? Prova ett påhittat exempel:
@@ -383,6 +405,7 @@ html.big { font-size: 118.75%; }
       </div>
 
       <div class="panel" role="tabpanel" id="panel-samtal" aria-labelledby="tab-samtal" hidden>
+        <h2 class="sr">Kolla ett samtal</h2>
         <p class="panel-intro"><strong>Pågår samtalet just nu?</strong> Du får alltid lägga på. Polisens råd är att våga vara otrevlig.</p>
         <fieldset class="checks">
           <legend class="label">Kryssa i det som stämmer</legend>
@@ -401,12 +424,18 @@ html.big { font-size: 118.75%; }
       </div>
 
       <div class="panel" role="tabpanel" id="panel-lurad" aria-labelledby="tab-lurad" hidden>
+        <h2 class="sr">Om du har blivit lurad</h2>
         <p class="panel-intro"><strong>Agera direkt.</strong> Ju snabbare du ringer banken, desto större är chansen att stoppa pengarna. Du har inget att skämmas för.</p>
         <ol class="steps">
           <li><div><h3>Ring din bank direkt</h3><p>Be dem spärra kort, BankID och internetbank och stoppa betalningar som inte har gått iväg än. Bankerna har spärrtjänst dygnet runt. Numret finns på bankens webbplats och ofta på baksidan av ditt kort. Använd aldrig ett nummer som bedragaren har gett dig.</p></div></li>
           <li><div><h3>Polisanmäl</h3><p>Ring <a class="num" href="tel:11414">114&nbsp;14</a> eller gå till en polisstation. Pågår brottet just nu, eller är någon på väg hem till dig? Ring <a class="num" href="tel:112">112</a>. Radera inget: spara sms, mejl, skärmbilder, telefonnummer och kontonummer som bevis. <a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/telefonbedrageri/" target="_blank" rel="noopener">Polisen om telefonbedrägerier</a>.</p></div></li>
-          <li><div><h3>Begär pengarna tillbaka</h3><p>Kontakta banken skriftligt så snart du kan, och senast inom 13&nbsp;månader. Har bedragaren gjort betalningar som du inte själv har godkänt, även om du loggade in med BankID åt hen, ska du oftast få tillbaka det mesta. Banken får dra högst 400&nbsp;kr i självrisk, och mer bara om du har varit grovt oaktsam. Efter en dom i Högsta domstolen är det banken som måste visa det. Har du själv gjort betalningen, till exempel en Swish till bedragaren, räknas den oftast inte som obehörig och chansen är mindre. Fråga ändå. Konsumentverket har <a href="https://www.konsumentverket.se/konsumentratt/bankbedragerier-och-kortbedragerier/" target="_blank" rel="noopener">brevmallar att skicka till banken</a>. Säger banken nej kan du anmäla till <a href="https://www.arn.se/konsument/" target="_blank" rel="noopener">Allmänna reklamationsnämnden, ARN</a>. Det kostar 150&nbsp;kr.</p></div></li>
-          <li><div><h3>Har du lämnat ut personnummer, BankID eller id-kort?</h3><p>Lägg en <a href="https://www.minuc.se/bedragerisparr" target="_blank" rel="noopener">bedrägerispärr hos UC</a> direkt. Den gör det svårare att ta lån i ditt namn och läggs också hos flera andra kreditupplysningsföretag. Spärren gäller först i två veckor. Ladda upp en kopia av polisanmälan, så förlängs den.</p></div></li>
+          <li><div><h3>Begär pengarna tillbaka</h3><p>Skriv till banken så snart du kan, och senast inom 13&nbsp;månader. Konsumentverket har <a href="https://www.konsumentverket.se/konsumentratt/bankbedragerier-och-kortbedragerier/" target="_blank" rel="noopener">brevmallar att skicka till banken</a>.</p>
+            <ul>
+              <li><strong>Har bedragaren gjort betalningar som du inte själv har godkänt?</strong> Då ska du oftast få tillbaka det mesta, även om du loggade in med BankID åt hen. Banken får dra högst 400&nbsp;kr i självrisk, och mer bara om du har varit grovt oaktsam. Efter en dom i Högsta domstolen är det banken som måste visa det.</li>
+              <li><strong>Har du själv gjort betalningen,</strong> till exempel en Swish till bedragaren? Då är chansen mindre. Fråga ändå.</li>
+              <li><strong>Säger banken nej?</strong> Då kan du anmäla till <a href="https://www.arn.se/konsument/" target="_blank" rel="noopener">Allmänna reklamationsnämnden, ARN</a>. Det kostar 150&nbsp;kr.</li>
+            </ul></div></li>
+          <li><div><h3>Har du lämnat ut personnummer, BankID eller id-kort?</h3><p>Lägg en bedrägerispärr direkt. Den gör det svårare att ta lån i ditt namn och läggs också hos de andra kreditupplysningsföretagen. Har du ett BankID som fungerar, lägg den <a href="https://www.minuc.se/bedragerisparr" target="_blank" rel="noopener">hos UC</a>. Har banken spärrat ditt BankID, använd i stället <a href="https://www.creditsafe.com/se/sv/kontakt/vanliga-fragor/sparra-ditt-personnummer.html" target="_blank" rel="noopener">Creditsafes formulär</a>, som inte kräver BankID. Spärren gäller först i två veckor. Skicka in en kopia av polisanmälan, så förlängs den.</p></div></li>
           <li><div><h3>Har du lämnat ut ett lösenord?</h3><p>Byt det direkt, och börja med din e-post. Använd olika lösenord för olika tjänster.</p></div></li>
           <li><div><h3>Har någon styrt din dator eller telefon?</h3><p>Koppla bort internet och avinstallera appen. Låt någon du litar på gå igenom enheten innan du loggar in på banken igen.</p></div></li>
           <li><div><h3>Se upp för nästa bluff</h3><p>Efter ett bedrägeri hör ofta någon av sig och lovar att få tillbaka pengarna mot en avgift. Det är en ny bluff. Ingen myndighet ringer och erbjuder sådan hjälp mot betalning.</p></div></li>
@@ -505,6 +534,7 @@ html.big { font-size: 118.75%; }
         <li><a href="https://www.konsumentverket.se/konsumentratt/bankbedragerier-och-kortbedragerier/" target="_blank" rel="noopener">Konsumentverket: Bank- och kortbedrägerier</a></li>
         <li><a href="https://www.fi.se/sv/publicerat/nyheter/2021/se-upp-for-bedragare-som-lovar-pengarna-tillbaka/" target="_blank" rel="noopener">Finansinspektionen: Bedragare som lovar pengarna tillbaka</a></li>
         <li><a href="https://www.minuc.se/bedragerisparr" target="_blank" rel="noopener">UC: Bedrägerispärr</a></li>
+        <li><a href="https://www.creditsafe.com/se/sv/kontakt/vanliga-fragor/sparra-ditt-personnummer.html" target="_blank" rel="noopener">Creditsafe: Spärra ditt personnummer</a></li>
         <li><a href="https://www.brottsofferjouren.se/" target="_blank" rel="noopener">Brottsofferjouren</a>, stödlinje 116&nbsp;006</li>
       </ul>
     </div>
