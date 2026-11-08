@@ -203,9 +203,12 @@ textarea { min-height: 9.5rem; resize: vertical; }
 .check-note { display: none; margin-top: 8px; padding-left: 12px; border-left: 4px solid var(--danger); font-weight: 600; }
 .check-note.calm { border-left-color: var(--ink-2); }
 .check input:checked + span .check-note { display: block; }
-.callresult { margin-top: 28px; }
-.callresult:empty { display: none; }
+.callresult, .askresult { margin-top: 28px; }
+.callresult:empty, .askresult:empty { display: none; }
 .callreset { margin: 16px 0 0; }
+.panel-note { margin: 24px 0 0; color: var(--ink-2); max-width: 38em; }
+.askbox { margin: 18px 0 0; }
+.askbox .checks { margin-top: 10px; }
 
 /* Lurad */
 .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
@@ -216,6 +219,10 @@ textarea { min-height: 9.5rem; resize: vertical; }
 .steps p { margin: 0; }
 .steps ul { margin: 8px 0 0; padding-left: 1.2em; }
 .steps ul li + li { margin-top: 6px; }
+.steps ul.banks { list-style: none; padding-left: 0; }
+.steps ul.banks li + li { margin-top: 2px; }
+.steps ul + p { margin-top: 8px; }
+.steps .howto { margin: 10px 0 0; }
 .num { font-weight: 700; white-space: nowrap; }
 
 /* Avsnitt */
@@ -257,6 +264,11 @@ h2 {
 .copystatus { min-height: 1.6em; margin: 12px 0 0; font-weight: 600; }
 .linkline { margin-top: 20px; }
 .share-more { margin: 28px 0 0; max-width: 38em; }
+.share-h { margin: 40px 0 0; font-size: 1.25rem; line-height: 1.3; }
+.share-h + .share-more { margin-top: 8px; }
+.share-list { margin: 8px 0 0; padding-left: 1.25em; max-width: 38em; }
+.share-list li + li { margin-top: 4px; }
+.share-list + .share-more { margin-top: 12px; }
 
 /* Större text, uppläsning och skärmbild */
 html.big { font-size: 118.75%; }
@@ -356,6 +368,17 @@ html.big { font-size: 118.75%; }
 .nojs .panel[hidden] { display: block !important; }
 .nojs .panel > h2.sr { position: static; width: auto; height: auto; margin: 32px 0 12px; overflow: visible; clip: auto; white-space: normal; }
 .nojs #panel-meddelande > :not(.nojs-only):not(h2) { display: none; }
+/* "Skriv ut stegen": bara stegen för den som har blivit lurad, svart på vitt, med länkarnas adresser utskrivna. */
+@media print {
+  :root { --bg: #FFFFFF; --ink: #000000; --ink-2: #333333; --line: #999999; --accent: #000000; color-scheme: light; }
+  html.print-lurad .site-head, html.print-lurad .site-foot, html.print-lurad main > .section, html.print-lurad #verktyg h1,
+  html.print-lurad #verktyg .lead, html.print-lurad .tabs, html.print-lurad #panel-meddelande, html.print-lurad #panel-samtal,
+  html.print-lurad #printsteps { display: none !important; }
+  html.print-lurad #panel-lurad { display: block !important; }
+  html.print-lurad #panel-lurad > h2.sr { position: static; width: auto; height: auto; margin: 0 0 12px; overflow: visible; clip: auto; white-space: normal; }
+  html.print-lurad #panel-lurad a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; overflow-wrap: anywhere; }
+  html.print-lurad .hero { padding: 0; }
+}
 </style>
 <noscript><style>.tabs{display:none}.panel[hidden]{display:block!important}.panel>h2.sr{position:static;width:auto;height:auto;margin:32px 0 12px;overflow:visible;clip:auto;white-space:normal}#panel-meddelande>:not(noscript):not(h2){display:none}</style></noscript>
 </head>
@@ -405,6 +428,24 @@ html.big { font-size: 118.75%; }
         <p class="ocr-line" id="ocr" hidden>Har du bara en skärmbild? <span class="nw"><button class="linkbtn" id="ocr-pick" type="button">Välj en skärmbild</button>,</span> så läser vi av texten. Bilden lämnar inte din enhet.</p>
         <input type="file" id="ocr-file" accept="image/*" hidden>
         <p class="ocr-status" id="ocr-status" role="status"></p>
+        <details class="howto askbox" id="askbox">
+          <summary>Går det inte att kopiera? Svara på några frågor i stället</summary>
+          <fieldset class="checks">
+            <legend class="label">Kryssa i det som stämmer om meddelandet</legend>
+            <label class="check"><input type="checkbox" value="sender"><span>Det ser ut att komma från en bank, en myndighet, ett paketbolag eller ett annat företag.</span></label>
+            <label class="check"><input type="checkbox" value="link"><span>Det finns en länk eller en knapp att trycka på.</span></label>
+            <label class="check"><input type="checkbox" value="pay"><span>Du ska betala något, till exempel frakt, tull, en avgift eller en skuld.</span></label>
+            <label class="check"><input type="checkbox" value="bankid"><span>Du ska logga in, legitimera dig eller skriva under med BankID.</span></label>
+            <label class="check"><input type="checkbox" value="secrets"><span>Du ska lämna kortnummer, koder, lösenord eller personnummer.</span></label>
+            <label class="check"><input type="checkbox" value="call"><span>Du ska ringa ett nummer som står i meddelandet.</span></label>
+            <label class="check"><input type="checkbox" value="family"><span>Någon i familjen har nytt nummer eller behöver pengar snabbt.</span></label>
+            <label class="check"><input type="checkbox" value="prize"><span>Du har vunnit något eller ska få pengar tillbaka.</span></label>
+            <label class="check"><input type="checkbox" value="hurry"><span>Det är bråttom: något stängs, spärras eller blir dyrare om du inte gör något i dag.</span></label>
+            <label class="check"><input type="checkbox" value="chat"><span>En okänd person vill börja prata, eller vill fortsätta på WhatsApp eller Telegram.</span></label>
+          </fieldset>
+          <div class="askresult" id="askresult" aria-live="polite"></div>
+          <p class="callreset"><button class="linkbtn" id="askreset" type="button" hidden>Börja om</button></p>
+        </details>
         <p class="examples">Inget eget meddelande till hands? Prova ett påhittat exempel:
           <button class="linkbtn" type="button" data-ex="paket" aria-pressed="false">paket-sms</button>,
           <button class="linkbtn" type="button" data-ex="mamma" aria-pressed="false">”Hej mamma”</button>,
@@ -417,7 +458,7 @@ html.big { font-size: 118.75%; }
 
       <div class="panel" role="tabpanel" id="panel-samtal" aria-labelledby="tab-samtal" hidden>
         <h2 class="sr">Kolla ett samtal</h2>
-        <p class="panel-intro"><strong>Pågår samtalet just nu?</strong> Du får alltid lägga på. Polisens råd är att våga vara otrevlig.</p>
+        <p class="panel-intro"><strong>Pågår samtalet just nu?</strong> Du får alltid lägga på. Polisens råd är att våga vara otrevlig. Bedragare är skickliga, och medan det pågår känns det sällan som en bluff.</p>
         <fieldset class="checks">
           <legend class="label">Kryssa i det som stämmer</legend>
           <label class="check"><input type="checkbox" id="q-caller" value="caller"><span>Personen säger att hen ringer från en bank, polisen, en myndighet eller ett företag.</span></label>
@@ -433,20 +474,51 @@ html.big { font-size: 118.75%; }
         </fieldset>
         <div class="callresult" id="callresult" aria-live="polite"></div>
         <p class="callreset"><button class="linkbtn" id="callreset" type="button" hidden>Börja om</button></p>
+        <p class="panel-note">Hur låter det? Polisen har <a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/telefonbedrageri/" target="_blank" rel="noopener">ett inspelat riktigt samtal</a> där en bedragare låtsas ringa från en bank.</p>
       </div>
 
       <div class="panel" role="tabpanel" id="panel-lurad" aria-labelledby="tab-lurad" hidden>
         <h2 class="sr">Om du har blivit lurad</h2>
         <p class="panel-intro"><strong>Agera direkt.</strong> Ju snabbare du ringer banken, desto större är chansen att stoppa pengarna. Du har inget att skämmas för.</p>
         <ol class="steps">
-          <li><div><h3>Ring din bank direkt</h3><p>Be dem spärra kort, BankID och internetbank och stoppa betalningar som inte har gått iväg än. Bankerna har spärrtjänst dygnet runt. Numret finns på bankens webbplats och ofta på baksidan av ditt kort. Använd aldrig ett nummer som bedragaren har gett dig. När du själv ringer bankens riktiga nummer kan de be dig legitimera dig med BankID. Det är i sin ordning.</p></div></li>
-          <li><div><h3>Polisanmäl</h3><p>Ring <a class="num" href="tel:11414">114&nbsp;14</a> eller gå till en polisstation. Pågår brottet just nu, eller är någon på väg hem till dig? Ring <a class="num" href="tel:112">112</a>. Radera inget: spara sms, mejl, skärmbilder, telefonnummer och kontonummer som bevis. <a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/telefonbedrageri/" target="_blank" rel="noopener">Polisen om telefonbedrägerier</a>.</p></div></li>
+          <li><div><h3>Ring din bank direkt</h3><p>Be dem spärra kort, BankID och internetbank och stoppa betalningar som inte har gått iväg än. De här numren är öppna dygnet runt:</p>
+            <ul class="banks">
+              <li>Handelsbanken <a class="num" href="tel:0771778899">0771-77&nbsp;88&nbsp;99</a></li>
+              <li>Länsförsäkringar <a class="num" href="tel:0858840011">08-588&nbsp;400&nbsp;11</a></li>
+              <li>Nordea <a class="num" href="tel:084025710">08-402&nbsp;57&nbsp;10</a></li>
+              <li>SEB <a class="num" href="tel:0774242424">0774-24&nbsp;24&nbsp;24</a></li>
+              <li>Swedbank <a class="num" href="tel:084111011">08-411&nbsp;10&nbsp;11</a>, välj 1 för spärr och 2 vid pågående bedrägeri</li>
+            </ul>
+            <p>Har du en annan bank? Numret står på bankens webbplats och ofta på baksidan av ditt kort. Använd aldrig ett nummer som bedragaren har gett dig. Ringer du själv bankens nummer kan banken be dig legitimera dig med BankID i samtalet. Läs i BankID-appen vem som frågar och vad du godkänner, och avbryt om du är osäker. Ringer någon upp dig och ber om BankID, lägg på.</p></div></li>
+          <li><div><h3>Polisanmäl</h3><p>Ring <a class="num" href="tel:11414">114&nbsp;14</a> eller gå till en polisstation. Pågår brottet just nu, eller är någon på väg hem till dig? Ring <a class="num" href="tel:112">112</a>. Radera inget: spara sms, mejl, skärmbilder, telefonnummer och kontonummer som bevis. <a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/telefonbedrageri/" target="_blank" rel="noopener">Polisen om telefonbedrägerier</a>.</p>
+            <details class="howto">
+              <summary>Skriv upp det här medan du minns</summary>
+              <ul>
+                <li>när det hände</li>
+                <li>numret som ringde eller skickade meddelandet, och vad personen sa att hen hette</li>
+                <li>vad du gjorde, till exempel loggade in med BankID, lämnade koder, installerade en app eller swishade</li>
+                <li>belopp och vart pengarna gick</li>
+                <li>polisanmälans nummer och bankens ärendenummer, som du behöver när du begär pengarna tillbaka</li>
+              </ul>
+            </details></div></li>
           <li><div><h3>Begär pengarna tillbaka</h3><p>Skriv till banken så snart du kan. Väntar du för länge kan du förlora rätten att få tillbaka pengarna, och efter 13&nbsp;månader är det för sent. Konsumentverket har <a href="https://www.konsumentverket.se/konsumentratt/bankbedragerier-och-kortbedragerier/" target="_blank" rel="noopener">brevmallar att skicka till banken</a>.</p>
             <ul>
-              <li><strong>Har bedragaren gjort betalningar som du inte själv har godkänt?</strong> Då ska du oftast få tillbaka det mesta, även om du loggade in med BankID åt hen. Banken får dra högst 400&nbsp;kr i självrisk. Har du varit grovt oaktsam får banken dra högst 12&nbsp;000&nbsp;kr. Hela beloppet får du bara stå för om du förstod risken och ändå gjorde som bedragaren sa. Efter en dom i Högsta domstolen är det banken som måste bevisa det.</li>
+              <li><strong>Har bedragaren gjort betalningar som du inte själv har godkänt?</strong> Då ska du oftast få tillbaka det mesta, även om bedragaren lurade dig att logga in med BankID. Banken får dra högst 400&nbsp;kr i självrisk. Har du varit grovt oaktsam får banken dra högst 12&nbsp;000&nbsp;kr. Hela beloppet får du bara stå för om du förstod risken och ändå gjorde som bedragaren sa. Efter en dom i Högsta domstolen är det banken som måste bevisa det.</li>
               <li><strong>Har du själv gjort betalningen,</strong> till exempel en Swish till bedragaren? Då är chansen mindre. Fråga ändå.</li>
               <li><strong>Säger banken nej?</strong> Be banken ompröva beslutet. Säger banken fortfarande nej kan du anmäla till <a href="https://www.arn.se/tvisteomraden/bank/" target="_blank" rel="noopener">Allmänna reklamationsnämnden, ARN</a>, inom ett år från att du först klagade. Det kostar 150&nbsp;kr, och kravet måste vara på minst 3&nbsp;000&nbsp;kr. Gratis råd får du hos <a href="https://konsumenternasbankochfinansbyra.se/" target="_blank" rel="noopener">Konsumenternas Bank- och finansbyrå</a> på <a class="num" href="tel:020105400">020-10&nbsp;54&nbsp;00</a>.</li>
-            </ul></div></li>
+            </ul>
+            <details class="howto">
+              <summary>Hur betalade du? Så kan du försöka få tillbaka pengarna</summary>
+              <ul>
+                <li><strong>Med kreditkort:</strong> Kom varan aldrig, eller får du inte pengarna tillbaka? Du har rätt att ställa samma krav på banken som på företaget. Det kallas <a href="https://www.konsumentverket.se/ekonomi/kortreklamation/" target="_blank" rel="noopener">invändningsrätt</a>.</li>
+                <li><strong>Med bankkort:</strong> Be banken om en kortreklamation. Vad som gäller står i kortets villkor, och det kan finnas tidsgränser.</li>
+                <li><strong>Med Swish eller en överföring:</strong> Ring banken direkt och berätta vart pengarna gick. Ju snabbare banken får veta, desto större är chansen att något går att göra.</li>
+                <li><strong>Mot faktura:</strong> Betala inte för något du inte har fått. Bestrid fakturan skriftligt hos företaget som skickade den.</li>
+                <li><strong>Med presentkort:</strong> Kontakta företaget som gav ut kortet, till exempel Google eller Apple, och polisanmäl. Spara kortet och kvittot.</li>
+                <li><strong>Med kryptovaluta:</strong> Kontakta tjänsten där du köpte den och polisanmäl. Tipsa också Finansinspektionen om bolaget.</li>
+                <li><strong>Med kontanter, guld eller smycken som någon hämtade:</strong> Ring 112 om det just har hänt. Rör inte det som personen har tagit i.</li>
+              </ul>
+            </details></div></li>
           <li><div><h3>Har du lämnat ut personnummer, BankID eller id-kort?</h3><p>Lägg en bedrägerispärr direkt. Den gör det svårare att ta lån i ditt namn och läggs också hos de andra kreditupplysningsföretagen. Har du ett BankID som fungerar, lägg den <a href="https://www.minuc.se/bedragerisparr" target="_blank" rel="noopener">hos UC</a>. Har banken spärrat ditt BankID, använd i stället <a href="https://www.creditsafe.com/se/sv/kontakt/vanliga-fragor/sparra-ditt-personnummer.html" target="_blank" rel="noopener">Creditsafes formulär</a>, som inte kräver BankID. Spärren gäller först i två veckor. Skicka in en kopia av polisanmälan, så förlängs den.</p>
             <ul>
               <li><strong>Har du lämnat ifrån dig id-kort eller körkort?</strong> Spärra det hos den som har utfärdat det.</li>
@@ -456,10 +528,13 @@ html.big { font-size: 118.75%; }
               <li><strong>Fråga ditt försäkringsbolag.</strong> Många hemförsäkringar ger hjälp vid id-kapning.</li>
             </ul></div></li>
           <li><div><h3>Har du lämnat ut ett lösenord?</h3><p>Byt det direkt, och börja med din e-post. Använd olika lösenord för olika tjänster.</p></div></li>
+          <li><div><h3>Har någon tagit över ditt WhatsApp, Facebook eller din e-post?</h3><p>Logga in igen och byt lösenord. I WhatsApp loggar du in igen med ditt telefonnummer och koden du får i ett sms. Slå sedan på tvåstegsverifiering. Varna dina vänner, för bedragaren ber ofta dem om pengar i ditt namn. Polisanmäl på <a class="num" href="tel:11414">114&nbsp;14</a>.</p></div></li>
           <li><div><h3>Har någon styrt din dator eller telefon?</h3><p>Koppla bort internet och avinstallera appen. Låt någon du litar på gå igenom enheten innan du loggar in på banken igen.</p></div></li>
           <li><div><h3>Se upp för nästa bluff</h3><p>Efter ett bedrägeri hör ofta någon av sig och lovar att få tillbaka pengarna mot en avgift. Det är en ny bluff. Ingen myndighet ringer och erbjuder sådan hjälp mot betalning.</p></div></li>
           <li><div><h3>Prata med någon</h3><p>Bedragarna är proffs, och det kan hända vem som helst. <a href="https://www.brottsofferjouren.se/" target="_blank" rel="noopener">Brottsofferjouren</a> ger gratis stöd på <a class="num" href="tel:116006">116&nbsp;006</a>, också på andra språk.</p></div></li>
         </ol>
+        <p class="panel-note">Har du ringt banken och polisanmält har du gjort det viktigaste. Ta resten i lugn takt, gärna tillsammans med någon.</p>
+        <p class="callreset"><button class="linkbtn" id="printsteps" type="button">Skriv ut stegen</button></p>
       </div>
     </div>
   </section>
@@ -472,14 +547,15 @@ html.big { font-size: 118.75%; }
         <p class="notice-kicker">Varning för bedragare</p>
         <p class="notice-q">Ringer någon och ber dig använda BankID?</p>
         <p class="notice-stop">Lägg på.</p>
-        <p class="notice-sub">Ring upp själv, på ett nummer du har letat upp själv. Det är aldrig oartigt mot en bedragare.</p>
+        <p class="notice-sub">Säg bara ”Jag ringer upp själv” och lägg på. Ring sedan upp på ett nummer du har letat upp själv. Det är aldrig oartigt mot en bedragare.</p>
         <ul class="notice-rules">
-          <li><strong>BankID är din namnteckning.</strong> Använd det bara när du själv har startat något.</li>
+          <li><strong>BankID är din namnteckning.</strong> Använd det bara när du själv har startat något, och läs vad som står i appen innan du godkänner. Är du osäker, tryck på Avbryt.</li>
+          <li><strong>Frågar BankID-appen om ett telefonsamtal?</strong> Svara som det är. Säger någon i telefon vad du ska svara, är det en bluff.</li>
           <li><strong>Ingen bank eller polis som ringer dig</strong> ber dig flytta pengar, lämna koder eller installera appar.</li>
           <li><strong>Polisen hämtar aldrig</strong> kort, kontanter eller smycken hemma hos dig.</li>
           <li><strong>Klicka inte på länkar i sms</strong> om paket, skatt, skulder eller ditt konto.</li>
           <li><strong>Bråttom är ett varningstecken.</strong> Du har alltid tid att lägga på och fråga någon.</li>
-          <li><strong>Bestäm ett familjeord.</strong> Röster kan härmas med AI, men inte ett ord som bara ni känner till.</li>
+          <li><strong>Bestäm ett familjeord.</strong> AI kan härma röster, men inte ett ord som bara ni känner till.</li>
         </ul>
         <p class="notice-foot">Lappen finns också som <a href="affisch.pdf" data-goatcounter-click="affisch-pdf">affisch att skriva ut</a> (pdf, A4).</p>
       </div>
@@ -499,7 +575,8 @@ html.big { font-size: 118.75%; }
           <tr><th scope="row">”Hej mamma”</th><td class="say" data-label="Så kan det låta">”Hej mamma, jag har tappat telefonen och har ett nytt nummer. Kan du swisha 4&nbsp;800&nbsp;kr?”</td><td data-label="Så avslöjar du den">Ring ditt barn på det gamla numret, eller ställ en fråga som bara hen kan svara på.</td></tr>
           <tr><th scope="row">Skatteåterbäringen</th><td class="say" data-label="Så kan det låta">”Du har 2&nbsp;341&nbsp;kr i skatteåterbäring. Fyll i dina kortuppgifter för att få pengarna.”</td><td data-label="Så avslöjar du den">Skatteverket frågar aldrig efter kontouppgifter i sms eller mejl, bara i sina e-tjänster.</td></tr>
           <tr><th scope="row">Köparen som ”betalar”</th><td class="say" data-label="Så kan det låta">”Jag köper din soffa! Godkänn bara med BankID så får du pengarna direkt.”</td><td data-label="Så avslöjar du den">För att ta emot en Swish behöver du aldrig använda BankID eller lämna kortuppgifter. Det du godkänner i Swish är en betalning från dig.</td></tr>
-          <tr><th scope="row">Investeringsbluffen</th><td class="say" data-label="Så kan det låta">”Känd svensk avslöjar hur hon blev rik på AI-trading. Investera 2&nbsp;500&nbsp;kr idag.”</td><td data-label="Så avslöjar du den">Kändisar i annonser och videor om snabba pengar är nästan alltid falska, ofta gjorda med AI. Ingen investering är både snabb, enkel och säker.</td></tr>
+          <tr><th scope="row">Bluffbutiken</th><td class="say" data-label="Så kan det låta">”Familjebutiken stänger efter 30 år! Allt ska bort med 80 procent rabatt, bara i dag: familjebutiken-rea.shop”</td><td data-label="Så avslöjar du den">Rea på nästan allt, en klocka som räknar ner och ett butiksnamn som är ett förnamn och en stad är vanliga tecken. Sök på butiken och läs omdömen på andra sidor. Betala hellre med kreditkort eller mot faktura, så har du bättre skydd om varan aldrig kommer.</td></tr>
+          <tr><th scope="row">Investeringsbluffen</th><td class="say" data-label="Så kan det låta">”Känd svensk avslöjar hur hon blev rik på AI-trading. Investera 2&nbsp;500&nbsp;kr idag.”</td><td data-label="Så avslöjar du den">Kändisar i annonser och videor om snabba pengar är nästan alltid falska, ofta gjorda med AI. Ingen investering är både snabb, enkel och säker. Sök på bolaget i <a href="https://www.fi.se/sv/for-konsumenter/bedragerier/sju-tips-for-att-undvika-bedragerier/" target="_blank" rel="noopener">Finansinspektionens register och varningslista</a> innan du för över pengar. Ett känt namn räcker inte, eftersom bedragare lånar namn från riktiga bolag.</td></tr>
           <tr><th scope="row">Kärleksbluffen</th><td class="say" data-label="Så kan det låta">”Älskling, jag sitter fast i tullen och behöver 15&nbsp;000&nbsp;kr för att komma hem till dig.”</td><td data-label="Så avslöjar du den">Skicka aldrig pengar till någon du bara har träffat på nätet, hur äkta känslorna än verkar.</td></tr>
         </tbody>
       </table>
@@ -530,7 +607,17 @@ html.big { font-size: 118.75%; }
         <label class="label" for="sharelink">Länk till sidan</label>
         <input class="field" id="sharelink" type="text" readonly>
       </div>
-      <p class="share-more">Gå gärna igenom bankens säkerhetsval tillsammans, till exempel lägre beloppsgränser för Swish och överföringar, och tidsfördröjning eller dubbelsignering vid stora belopp om banken har det.</p>
+      <h3 class="share-h">Orolig för någon du känner?</h3>
+      <p class="share-more">Det här kan vara tecken på att någon är på väg att bli lurad:</p>
+      <ul class="share-list">
+        <li>är hemlig med pengar, samtal eller en ny vän på nätet</li>
+        <li>tar ut eller för över stora belopp, tar lån eller ber andra om pengar</li>
+        <li>pratar om en investering som inte kan gå fel, om kryptovaluta eller om en vinst</li>
+        <li>väntar på någon som ska hämta kort, pengar eller smycken</li>
+        <li>blir arg eller ledsen när du frågar</li>
+      </ul>
+      <p class="share-more">Ett tecken kan vara en slump. Flera samtidigt är ett skäl att prata. Börja gärna med en fråga, till exempel: ”Jag läste om bedragare som säger att de ringer från banken. Vad skulle du göra om någon ringde dig?” Fråga inte hur hen kunde gå på det, för skam gör att många slutar berätta. Har pengar försvunnit, ring banken tillsammans på ett nummer ni har letat upp, och polisanmäl.</p>
+      <p class="share-more">Gå gärna igenom bankens säkerhetsval tillsammans, till exempel lägre beloppsgränser för Swish och överföringar, och tidsfördröjning eller dubbelsignering vid stora belopp om banken har det. Slå också på notiser från BankID-appen i telefonens inställningar. Då märker du om ett BankID aktiveras på ditt personnummer.</p>
       <p class="share-more">Ska du prata med en äldre anhörig? Polisen har ett stöd för samtalet: <a href="https://polisen.se/utsatt-for-brott/skydda-dig-mot-brott/brott-mot-aldre-och-personer-med-funktionsnedsattning/prata-med-nara-och-kara-om-bedragerier/" target="_blank" rel="noopener">Prata med nära och kära om bedrägerier</a>.</p>
     </div>
   </section>
@@ -541,7 +628,8 @@ html.big { font-size: 118.75%; }
     <div>
       <h2>Om sidan</h2>
       <p>Är det bluff? är en fristående och gratis sida. Den görs av en privatperson och är inte kopplad till någon bank, myndighet eller något företag.</p>
-      <p>Analysen sker i din webbläsare. Texten du klistrar in skickas inte någonstans och sparas inte.</p>
+      <p>Den riktiga sidan finns på tollegoransson-maker.github.io/ar-det-bluff. Den ringer aldrig, skickar aldrig sms eller mejl, ber aldrig om BankID, koder, kortuppgifter eller pengar och säger aldrig att ett meddelande är äkta. Gör någon det i sidans namn är det en bluff.</p>
+      <p>Analysen sker i din webbläsare. Texten du klistrar in skickas inte någonstans och sparas inte. Vill du se själv? Slå på flygplansläge när sidan har laddats och tryck på Kolla meddelandet. Svaret kommer ändå.</p>
       <p>Sidan räknar besök och hur verktyget används, till exempel hur många meddelanden som kollas och vilket svar de får. Det du skriver räknas aldrig och skickas ingenstans. Räkningen görs med GoatCounter, som bara sparar sammanräknade siffror, inte din IP-adress eller något annat som kan kopplas till dig.</p>
       <p>Verktyget letar efter kända varningstecken och kan missa nya knep. Lita alltid på din magkänsla och kontrollera med avsändaren på ett sätt du själv väljer.</p>
     </div>
@@ -561,7 +649,7 @@ html.big { font-size: 118.75%; }
     <p class="updated">Senast uppdaterad november 2026.</p>
   </div>
 </footer>
-<script src="app.js?v=3f9d7c52"></script>
+<script src="app.js?v=879e83b0"></script>
 <script>if(!window.bluffReady)document.documentElement.className+=' nojs';</script>
 <script data-goatcounter="https://kollabluffen.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js" integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ" crossorigin="anonymous"></script>
 </body>

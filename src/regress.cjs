@@ -56,7 +56,7 @@ const SITE = 'https://tollegoransson-maker.github.io/ar-det-bluff/';
   ['M3 Tullverket', 'Tullverket: Ditt paket har fastnat. Betala 49 kr här: https://tullverket-se.com', 'high'],
   ['C1 samtalsutskrift', 'Hej, jag ringer från Nordeas bedrägeriavdelning. Vi har sett konstiga köp. Öppna din BankID-app så skickar jag en förfrågan som du godkänner.', 'high'],
   // The page's own texts must not warn about the page.
-  ['O1 delningstexten', 'Hej! Här är en sida där du kan kolla om ett sms eller ett samtal är en bluff: ' + SITE + '\n\nKom ihåg: ingen bank eller polis ringer oväntat och ber dig använda BankID. Lägg på och ring upp själv.', 'low'],
+  ['O1 delningstexten', 'Hej! Här är en sida där du kan kolla om ett sms eller ett samtal är en bluff: ' + SITE + '\n\nKom ihåg: ingen bank eller polis ringer oväntat och ber dig använda BankID. Lägg på och ring upp själv. Sidan ber aldrig om BankID, koder eller pengar.', 'low'],
   ['O2 testresultatet', 'Jag fick 8 av 10 rätt på bluff-testet. Klarar du det? ' + SITE + '#testa', 'low'],
   ['O3 egen domän', 'Kolla sms:et på https://ardetbluff.se innan du klickar. BankID ska du bara använda själv.', 'low'],
   // Ordinary messages that must stay calm.
@@ -67,6 +67,8 @@ const SITE = 'https://tollegoransson-maker.github.io/ar-det-bluff/';
 ].forEach(c => cases.push(c));
 // Current scam types and real messages from the first review round.
 require(path.join(__dirname, 'regress-extra.cjs')).forEach(c => cases.push(c));
+// Scams written to slip past the analysis, and real messages that look scary, from the third review round.
+require(path.join(__dirname, 'regress-round3.cjs')).forEach(c => cases.push(c));
 
 // Example sentences in the page's own table must at least get a warning.
 for (const m of page.matchAll(/<th scope="row">([^<]+)<\/th><td class="say"[^>]*>”([^<]+)”<\/td>/g)) {

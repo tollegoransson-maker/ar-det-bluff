@@ -10,7 +10,7 @@ Härifrån byggs sajten i roten, alltså `index.html` och `app.js`. Allt körs m
 - `fonts/fonts.css`: typsnittsreglerna som byggs in i `index.html`. Själva typsnittsfilerna ligger i `fonts/` i roten.
 - `sw-template.js`: mallen för `sw.js`, som sparar en kopia av sidan i telefonen så att den öppnas även utan uppkoppling.
 - `bilder/`: källorna till affischen, delningsbilden och ikonerna, och en testbild för skärmbildsläsningen.
-- `regress.cjs`, `regress-cases.cjs`, `regress-extra.cjs`, `test-engine.cjs` och `verify.cjs`: testerna.
+- `regress.cjs`, `regress-cases.cjs`, `regress-extra.cjs`, `regress-round3.cjs`, `test-engine.cjs` och `verify.cjs`: testerna.
 
 ## Bygga
 
@@ -49,9 +49,9 @@ node src/test-engine.cjs src/ar-det-bluff.html
 node src/verify.cjs src
 ```
 
-- `regress.cjs` kör drygt 200 meddelanden. De flesta är realistiska bluffar och äkta meddelanden från granskningar (`regress-cases.cjs` och `regress-extra.cjs`), och vart och ett måste få rätt svar. Den kontrollerar också att de två råd som visas inte säger samma sak, och att analysen går snabbt. Med `-v` visas alla meddelanden.
+- `regress.cjs` kör drygt 300 meddelanden. De flesta är realistiska bluffar och äkta meddelanden från granskningar (`regress-cases.cjs`, `regress-extra.cjs` och `regress-round3.cjs`), och vart och ett måste få rätt svar. I `regress-round3.cjs` finns bluffar som är skrivna för att ta sig förbi analysen, till exempel med siffror i stället för bokstäver, och äkta meddelanden som ser skrämmande ut. Den kontrollerar också att de två råd som visas inte säger samma sak, och att analysen går snabbt. Med `-v` visas alla meddelanden.
 - `test-engine.cjs` kör 54 meddelanden.
-- `verify.cjs` gör drygt 35 kontroller av sidan: att exemplen och testfrågorna stämmer med verktyget, att telefonnumren ringer rätt, att texten har tillräcklig kontrast i ljust och mörkt läge och att alla länkar fungerar. Den behöver internet.
+- `verify.cjs` gör ett femtiotal kontroller av sidan: att exemplen och testfrågorna stämmer med verktyget, att telefonnumren ringer rätt, att bankernas nummer fortfarande står på bankernas egna sidor, att texten har tillräcklig kontrast i ljust och mörkt läge och att alla länkar fungerar. Den behöver internet.
 
 Telefonnumren i testerna är nummer som PTS och Ofcom har reserverat för påhittade sammanhang, så att inga riktiga personers nummer hamnar här. Använd sådana nummer i nya testfall också, till exempel 070-174 06 35 eller 08-465 004 56.
 
@@ -86,5 +86,6 @@ När sajten får en egen domän ska adressen ändras i:
 - `regress.cjs`: `SITE`.
 - `ar-det-bluff.html`: `OWN`, sajtens egna adresser, så att en länk till sajten inte varnar för sig själv. `ardetbluff.se` finns redan med.
 - `bilder/poster.html`: adressen i QR-koden och adressen som står under den. Gör sedan om affischen.
+- `parts/page.html`: den riktiga adressen som står under "Om sidan".
 
 Bygg sedan om, kör testerna och lägg till domänen i inställningarna för GitHub Pages.

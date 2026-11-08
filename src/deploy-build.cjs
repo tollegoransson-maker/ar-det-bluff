@@ -34,9 +34,11 @@ const artUrl = "var SHARE_URL = 'https://tollegoransson-maker.github.io/ar-det-b
 if (ui.indexOf(artUrl) === -1) throw new Error('SHARE_URL line not found');
 if (ui.indexOf('var CAN_OCR = false;') === -1) throw new Error('CAN_OCR line not found');
 if (ui.indexOf('var CAN_SW = false;') === -1) throw new Error('CAN_SW line not found');
+if (ui.indexOf('var WEB = false;') === -1) throw new Error('WEB line not found');
 const webUi = ui.replace(artUrl, "var SHARE_URL = location.protocol.indexOf('http') === 0 ? location.origin + location.pathname.replace(/index\\.html$/, '') : 'https://tollegoransson-maker.github.io/ar-det-bluff/';")
   .replace('var CAN_OCR = false;', 'var CAN_OCR = true;')
-  .replace('var CAN_SW = false;', 'var CAN_SW = true;').trim();
+  .replace('var CAN_SW = false;', 'var CAN_SW = true;')
+  .replace('var WEB = false;', 'var WEB = true;').trim();
 const app = engine + '\n\n' + webUi + '\n';
 const appVersion = crypto.createHash('sha1').update(app).digest('hex').slice(0, 8);
 

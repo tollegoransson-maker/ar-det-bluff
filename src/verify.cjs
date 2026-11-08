@@ -57,6 +57,8 @@ const made = [...ui.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
 const used = [...new Set([...ui.matchAll(/\$\('#([\w-]+)'/g), ...ui.matchAll(/getElementById\('([\w-]+)'\)/g)].map(m => m[1]))];
 const lost = used.filter(id => made.indexOf(id) === -1 && ids.indexOf(id) === -1);
 check('Alla element som skriptet använder finns på sidan?', lost.length === 0, lost.join(', '));
+// A calm answer must never read as a guarantee, also not for someone a scammer has sent here.
+check('Lugna svar säger att sidan aldrig kan intyga att något är äkta?', /kan aldrig intyga/.test(ui) && /Det betyder inte att meddelandet är äkta/.test(ui));
 
 // 5. Text contrast in both themes (WCAG AA, 4.5:1).
 function tokens(block) {
@@ -90,11 +92,43 @@ function status(url, hops) {
     req.on('error', e => resolve('error ' + e.code));
   });
 }
+function body(url, hops) {
+  return new Promise(resolve => {
+    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131 Safari/537.36', 'Accept-Language': 'sv-SE,sv' }, timeout: 20000 }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && hops < 4) { res.resume(); resolve(body(new URL(res.headers.location, url).href, hops + 1)); return; }
+      let d = '';
+      res.setEncoding('utf8');
+      res.on('data', c => { d += c; });
+      res.on('end', () => resolve(d));
+    });
+    req.on('timeout', () => { req.destroy(); resolve(''); });
+    req.on('error', () => resolve(''));
+  });
+}
+// 7. The banks' around-the-clock numbers on the page must still be on each bank's own page. A wrong number helps nobody.
+const BANKS = [
+  ['0771-77 88 99', 'https://www.handelsbanken.se/sv/privat/kontakt-och-support/sakerhet-bedrageri'],
+  ['08-588 400 11', 'https://www.lansforsakringar.se/privat/bank/kort--betalningar/sparra-kort/'],
+  ['08-402 57 10', 'https://www.nordea.se/privat/liv/sakerhet/anmal-bedrageri.html'],
+  ['0774-24 24 24', 'https://seb.se/var-kundservice'],
+  ['08-411 10 11', 'https://www.swedbank.se/bedrageri-och-sakerhet/anmala-bedragerier.html']
+];
+const flat = page.replace(/&nbsp;/g, ' ');
 (async () => {
   const urls = [...new Set([...page.matchAll(/<a [^>]*href="(https:[^"]+)"/g)].map(m => m[1]))];
   for (const u of urls) {
     const s = await status(u, 0);
     check(`Länken svarar: ${u.replace(/^https:\/\/(www\.)?/, '').slice(0, 60)}?`, typeof s === 'number' && s < 400, String(s));
+  }
+  for (const [shown, src] of BANKS) {
+    const digits = shown.replace(/\D/g, '');
+    const onPage = flat.includes('>' + shown + '<') && page.includes('href="tel:' + digits + '"');
+    // On the bank's page the number may be written with other spaces, or as +46 without the first 0.
+    const sep = d => d.split('').join('[\\s\\u00a0\\-\\u2011.]*');
+    const re = new RegExp('(?:' + sep(digits) + '|\\+?46[\\s\\u00a0\\-]*\\(?0?\\)?' + sep(digits.slice(1)) + ')');
+    const html = await body(src, 0);
+    const ok = onPage && re.test(html);
+    check(`Banknumret ${shown} står på sidan och på bankens egen sida?`, ok, ok ? '' : onPage ? (html ? 'inte på bankens sida' : 'bankens sida svarade inte') : 'saknas på sidan');
   }
   let failed = 0;
   for (const r of results) { if (!r.ok) failed++; console.log((r.ok ? 'ja  ' : 'NEJ ') + r.q + (r.note ? '  (' + r.note + ')' : '')); }

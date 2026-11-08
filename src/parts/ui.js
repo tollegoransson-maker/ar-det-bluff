@@ -3,6 +3,7 @@
   var SHARE_URL = 'https://tollegoransson-maker.github.io/ar-det-bluff/';
   var CAN_OCR = false;
   var CAN_SW = false;
+  var WEB = false;
   var TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
   // Kontrollsumman gör att webbläsaren vägrar köra filen om någon har ändrat den. Räkna om den om versionen byts:
   // curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
@@ -11,6 +12,16 @@
   var TESS_LANG = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/swe@1.0.0/4.0.0_best_int';
   var reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+  // På webben ska verktyget inte gå att använda inuti någon annans sida, där ett falskt svar kan läggas ovanpå det
+  // riktiga. (På claude.ai visas sidan alltid i en ram, så det gäller bara webbversionen.)
+  if (WEB && window.top !== window.self) {
+    window.bluffReady = true;
+    var tool = document.getElementById('verktyg');
+    if (tool) tool.innerHTML = '<div class="wrap"><h1 id="titel">Öppna den riktiga sidan</h1><p class="lead">Den här sidan visas inuti en annan webbplats. ' +
+      'Öppna den själv i stället, på <strong>' + esc(location.host + location.pathname) + '</strong>.</p></div>';
+    return;
+  }
 
   function $(s, el) { return (el || document).querySelector(s); }
   function $$(s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); }
@@ -90,16 +101,17 @@
     if (!b) return;
     var synth = window.speechSynthesis;
     if (synth.speaking) { synth.cancel(); resetSpeak(); return; }
-    var box = b.closest('.result, .callresult');
+    var box = b.closest('.result, .callresult, .askresult');
     var verdict = box ? box.querySelector('.verdict') : null;
     if (!verdict) return;
     var parts = [];
     Array.prototype.forEach.call(verdict.children, function (el) { if (!el.querySelector('[data-speak]')) parts.push(el.innerText); });
     var todo = box.querySelector('.list');
     if (todo) parts.push('Gör så här. ' + todo.innerText);
-    // I samtalsdelen står råden under raderna man har kryssat i.
-    if (box.classList.contains('callresult')) {
-      $$('#panel-samtal input:checked').forEach(function (i) {
+    // I samtalsdelen och frågorna om meddelandet står råden under raderna man har kryssat i.
+    var ticked = box.classList.contains('callresult') ? '#panel-samtal input:checked' : box.classList.contains('askresult') ? '#askbox input:checked' : null;
+    if (ticked) {
+      $$(ticked).forEach(function (i) {
         var note = i.nextElementSibling ? i.nextElementSibling.querySelector('.check-note') : null;
         if (note && i.value !== 'caller') parts.push(note.innerText);
       });
@@ -128,12 +140,14 @@
   var VERDICT = {
     high: { title: 'Det här är troligen en bluff', sub: 'Klicka inte på länkar och svara inte. Ring bara nummer som du redan har eller själv har letat upp.' },
     medium: { title: 'Var försiktig', sub: 'Meddelandet har tecken som är vanliga i bluffar. Gör inget av det som meddelandet ber om förrän du själv har kontaktat avsändaren, till exempel på ett nummer du har letat upp.' },
-    low: { title: 'Inga tydliga varningstecken', sub: 'Det betyder inte att meddelandet är säkert. Väntade du dig inte meddelandet? Klicka inte på länkar och lämna inga uppgifter förrän du själv har kontaktat avsändaren, till exempel på ett nummer du har letat upp.' }
+    low: { title: 'Inga tydliga varningstecken', sub: 'Det betyder inte att meddelandet är äkta. Sidan känner bara igen kända knep, och ett meddelande kan vara skrivet så att den inte hittar något. Väntade du dig inte meddelandet? Klicka inte på länkar och lämna inga uppgifter förrän du själv har kontaktat avsändaren, till exempel på ett nummer du har letat upp.' }
   };
   // Står i varje svar: den som redan har agerat ska inte radera bevisen, och ska hitta hjälpen direkt.
   // Ett vanligt meddelande ska inte låta som ett brott, men vägen till hjälpen finns kvar om något ändå känns fel.
   var ALREADY = '<p class="verdict-more">Har du redan klickat, betalat eller lämnat uppgifter? Radera inte meddelandet, det kan behövas som bevis. <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>';
   var ALREADY_LOW = '<p class="verdict-more">Har du redan klickat eller lämnat uppgifter och känns något fel? <a href="#lurad" data-goto="lurad">Se vad du ska göra</a>.</p>';
+  // Bedragare kan skriva om ett meddelande tills sidan inte hittar något, och sedan säga "kolla själv där".
+  var ALIBI = '<p class="verdict-more">Har någon bett dig kolla meddelandet här, eller sagt att sidan visar att det är äkta? Lita inte på det. Sidan kan aldrig intyga att ett meddelande är äkta.</p>';
 
   var msg = $('#msg'), out = $('#result'), exKey = null, helpedFor = null, shownFor = null;
   var resultStatus = $('#result-status');
@@ -147,7 +161,7 @@
 
   // Varningstecknen numreras i den ordning de står i meddelandet, så att markering och förklaring hör ihop.
   function numbered(flags) {
-    var hasLinkFlag = flags.some(function (f) { return f.id === 'link_lookalike' || f.id === 'link_mismatch'; });
+    var hasLinkFlag = flags.some(function (f) { return /^link_(?:lookalike|mismatch|homograph|hosted)$/.test(f.id); });
     return flags
       .filter(function (f) { return f.matches.length && !(hasLinkFlag && f.id === 'link'); })
       .map(function (f) { return { f: f, first: Math.min.apply(null, f.matches.map(function (m) { return m.s; })) }; })
@@ -189,11 +203,17 @@
     }
     if (r.truncated) h += '<p class="trunc">Meddelandet är mycket långt. Vi har bara kollat de första 20&nbsp;000 tecknen.</p>';
     h += '<div class="verdict ' + r.level + '" id="verdict"><h3 class="verdict-title">' + V.title + '</h3><p>' + V.sub + '</p>' +
-      (r.type ? '<p class="verdict-kind">Upplägget liknar: <strong>' + esc(r.type) + '</strong></p>' : '') + (r.level === 'low' ? ALREADY_LOW : ALREADY) + speakButton() + '</div>';
+      (r.type ? '<p class="verdict-kind">Upplägget liknar: <strong>' + esc(r.type) + '</strong></p>' : '') + (r.level === 'low' ? ALREADY_LOW : ALREADY) + (r.level !== 'high' ? ALIBI : '') + speakButton() + '</div>';
+    // Den som inte kan kopiera skriver ibland en beskrivning i stället. Den går inte att kolla, men frågorna kan hjälpa.
+    if (r.level === 'low' && text.length < 200 && /(^|[^\p{L}])(sms|sms:et|mejl|mejlet|mail|brev|brevet|samtal|ringde|skrev|skickade|fick ett|de vill|dom vill|han vill|hon vill|vill att jag)(?![\p{L}])/iu.test(text)) {
+      h += '<p class="example-note describe">Skrev du en beskrivning av meddelandet? Kollen behöver själva texten, ord för ord. <button class="linkbtn" type="button" data-openask>Svara på frågor om meddelandet i stället</button>.</p>';
+    }
     var official = r.links.filter(function (l) { return l.status === 'official' && l.kind === 'url'; });
-    if (official.length && r.level !== 'high') {
-      h += '<p class="official">Länken går till <strong>' + esc(official[0].reg) + '</strong>, som är den riktiga adressen till ' + esc(official[0].brand.name) +
-        '. Öppna ändå hellre appen eller webbplatsen själv.</p>';
+    // Bara om meddelandet inte ber om något annat: en riktig länk kan vara lockbete bredvid ett falskt telefonnummer.
+    var asks = r.flags.some(function (f) { return /^(?:call_number|pay_by_phone|cards|code|code_sms|bankid_use|approve_push|swish_receive|money_request|call_to_stop|refers_self)$/.test(f.id); });
+    if (official.length && r.level !== 'high' && !asks) {
+      h += '<p class="official">Adressen i länken slutar på <strong>' + esc(official[0].reg) + '</strong>, som hör till ' + esc(official[0].brand.name) +
+        '. Det säger inget om resten av meddelandet, till exempel telefonnummer. Öppna hellre appen eller webbplatsen själv.</p>';
     }
     var todos = r.todos.slice(0, 2).map(esc);
     // Bluff-sms kan rapporteras till 7726, som alla mobiloperatörer tar emot (Skatteverket och operatörerna).
@@ -393,7 +413,7 @@
   var TIPS = {
     caller: 'Lägg på och ring upp själv, på ett nummer du har letat upp.',
     transfer: 'Riktiga banker, myndigheter och företag kopplar inte samtal till varandra. Ring själv på ett nummer du har letat upp.',
-    bankid:'Legitimera dig inte. Den som får dig att använda BankID kan ta lån och tömma konton i ditt namn.',
+    bankid: 'Legitimera dig inte. Den som får dig att använda BankID kan ta lån och tömma konton i ditt namn. Frågar appen om samtalet, svara som det är och tryck på Avbryt.',
     codes: 'Säg inga koder eller kortnummer, inte ens om personen redan vet ditt namn och personnummer.',
     money: 'Det finns inga säkra konton. Flytta inga pengar.',
     remote: 'Installera ingenting. Har du redan gjort det: koppla bort internet och stäng av enheten.',
@@ -434,6 +454,73 @@
     updateCall();
   });
 
+  /* Frågor om meddelandet, för den som inte kan kopiera det. Vikterna fungerar som i analysen: ett tecken som aldrig
+     hör till ett riktigt meddelande räcker, annars krävs två vanliga tecken. Svaret blir aldrig "äkta", eftersom kryss
+     inte kan visa att ett meddelande är äkta. */
+  var ASK = {
+    sender: { w: 0, note: 'Namnet på avsändaren kan vara förfalskat. Kolla i företagets egen app eller ring ett nummer du har letat upp.' },
+    link: { w: 2, note: 'Tryck inte på länken. Öppna appen eller skriv in adressen själv.' },
+    pay: { w: 2, note: 'Betala aldrig via ett meddelande. Kolla i företagets egen app.' },
+    bankid: { w: 2, note: 'Använd inte BankID via meddelandet. Logga bara in i appen eller på en adress du själv har skrivit.' },
+    secrets: { w: 3, note: 'Lämna inget. Ingen seriös avsändare ber om det i ett meddelande.' },
+    call: { w: 2, note: 'Ring inte numret. Ring bara nummer som du har letat upp själv.' },
+    family: { w: 3, note: 'Ring personen på det gamla, vanliga numret innan du gör något.' },
+    prize: { w: 2, note: 'Pengar som väntar på dig kräver aldrig att du först betalar eller loggar in.' },
+    hurry: { w: 1.5, note: 'Bråttom är ett varningstecken. En riktig avsändare ger dig tid.' },
+    chat: { w: 3, note: 'Svara inte. Så börjar många investerings- och kärleksbluffar.' }
+  };
+  var askOut = $('#askresult'), askReset = $('#askreset');
+  function updateAsk() {
+    var on = $$('#askbox input:checked').map(function (i) { return i.value; });
+    askReset.hidden = !on.length;
+    if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+    if (!on.length) { askOut.innerHTML = ''; return; }
+    trackOnce('fragor-om-meddelande');
+    var score = 0, crit = false;
+    on.forEach(function (k) { score += ASK[k].w; if (ASK[k].w >= 3) crit = true; });
+    var level = crit || score >= 4 ? 'high' : score >= 1.5 ? 'medium' : 'low';
+    var title = level === 'low' ? 'Kontakta avsändaren själv' : VERDICT[level].title;
+    var text = level === 'high' ? 'Det du har kryssat i är precis så bedragare arbetar. Gör inget av det som meddelandet ber om. Vill du kontrollera, kontakta avsändaren själv, i deras app eller på ett nummer du har letat upp.'
+      : level === 'medium' ? 'Det du har kryssat i är vanligt i bluffar, men kan också finnas i riktiga meddelanden. Gör inget av det som meddelandet ber om förrän du själv har kontaktat avsändaren, till exempel i deras app eller på ett nummer du har letat upp.'
+      : 'Det kan vara äkta, men namn och nummer går att förfalska. Kolla i företagets egen app eller ring ett nummer du har letat upp.';
+    askOut.innerHTML = '<div class="verdict ' + level + '"><h3 class="verdict-title">' + title + '</h3><p>' + text + '</p>' +
+      (level === 'low' ? '' : ALREADY) + speakButton() + '</div>';
+  }
+  $$('#askbox input').forEach(function (i) {
+    var span = i.nextElementSibling;
+    if (span && ASK[i.value]) span.insertAdjacentHTML('beforeend', '<span class="check-note' + (ASK[i.value].w ? '' : ' calm') + '">' + esc(ASK[i.value].note) + '</span>');
+    i.addEventListener('change', updateAsk);
+  });
+  askReset.addEventListener('click', function () {
+    $$('#askbox input').forEach(function (i) { i.checked = false; });
+    updateAsk();
+  });
+  // Från tipset i ett lugnt svar: öppna frågorna och gå dit.
+  out.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-openask]') : null;
+    if (!b) return;
+    var box = $('#askbox');
+    box.open = true;
+    if (box.scrollIntoView) box.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    var s = box.querySelector('summary');
+    if (s) s.focus();
+  });
+
+  /* Skriv ut stegen för den som har blivit lurad, med alla hopfällda delar öppna */
+  $('#printsteps').addEventListener('click', function () {
+    var shut = $$('#panel-lurad details').filter(function (d) { return !d.open; });
+    shut.forEach(function (d) { d.open = true; });
+    document.documentElement.classList.add('print-lurad');
+    function done() {
+      document.documentElement.classList.remove('print-lurad');
+      shut.forEach(function (d) { d.open = false; });
+      window.removeEventListener('afterprint', done);
+    }
+    window.addEventListener('afterprint', done);
+    track('lurad-utskrift');
+    window.print();
+  });
+
   /* Kopiera, med reserv när urklipp inte går att använda */
   function copy(text, field, ok, statusEl) {
     function fallback() {
@@ -472,7 +559,7 @@
     { from: 'Sms från ett okänt nummer', text: 'Hej pappa, det är jag. Mobilen gick sönder så jag lånar en kompis telefon. Kan du swisha 3 000 kr? Förklarar sen ❤️', answer: 'bluff',
       why: 'Så låter ”Hej mamma”-bluffen: ny telefon och pengar på en gång. Ring ditt barn på det vanliga numret.' },
     { from: 'Sms, strax efter att du själv loggade in', text: 'Din kod för inloggning är 482917. Ange den bara på sidan du själv öppnade. Dela aldrig koden med någon.', answer: 'akta',
-      why: 'Koden kom för att du själv just loggade in, och sms:et säger åt dig att inte dela den. Får du en sådan kod utan att ha loggat in: ge den aldrig till någon och byt lösenord.' },
+      why: 'Koden kom för att du själv just loggade in. Det är det som avgör, inte vad det står i sms:et, för det kan en bedragare också skriva. Får du en kod utan att ha loggat in: ge den aldrig till någon och byt lösenord.' },
     { from: 'Sms', text: 'Skatteverket: Du har en återbetalning på 1 846 kr. Ange dina kortuppgifter för utbetalning: skatteverket-se.example', answer: 'bluff',
       why: 'Skatteverket frågar aldrig efter kortuppgifter i sms, och adressen är inte skatteverket.se.' },
     { from: 'Telefonsamtal', text: '”Hej, det här är bankens säkerhetsavdelning. Vi ser misstänkta köp på ditt kort. Logga in med BankID så stoppar vi dem.”', answer: 'bluff',
@@ -531,7 +618,7 @@
   /* Dela */
   var hasUrl = SHARE_URL.indexOf('http') === 0;
   var shareText = 'Hej! Här är en sida där du kan kolla om ett sms eller ett samtal är en bluff' + (hasUrl ? ': ' + SHARE_URL : '.') +
-    '\n\nKom ihåg: ingen bank eller polis ringer oväntat och ber dig använda BankID. Lägg på och ring upp själv.';
+    '\n\nKom ihåg: ingen bank eller polis ringer oväntat och ber dig använda BankID. Lägg på och ring upp själv. Sidan ber aldrig om BankID, koder eller pengar.';
   var shareMsg = $('#sharemsg'), shareLink = $('#sharelink'), status = $('#copystatus');
   shareMsg.value = shareText;
   if (hasUrl) shareLink.value = SHARE_URL;

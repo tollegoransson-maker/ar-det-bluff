@@ -16,17 +16,17 @@
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: var(--ink); font-family: var(--body); }
   .sheet { width: 210mm; height: 297mm; padding: 0 18mm; display: flex; flex-direction: column; overflow: hidden; }
   .bar { height: 6mm; margin: 0 -18mm; background: var(--red); }
-  .notice { margin: 10mm 0 0; font-weight: 700; font-size: 13pt; color: var(--red); }
+  .notice { margin: 8mm 0 0; font-weight: 700; font-size: 13pt; color: var(--red); }
   h1 { margin: 3mm 0 0; font-family: var(--head); font-weight: 700; font-size: 34pt; line-height: 1.08; letter-spacing: -0.01em; max-width: 160mm; }
-  .stop { margin: 3mm 0 0; font-family: var(--head); font-weight: 700; font-size: 88pt; line-height: 0.95; letter-spacing: -0.02em; color: var(--red); }
-  .sub { margin: 5mm 0 0; font-size: 15pt; line-height: 1.4; max-width: 150mm; }
-  h2 { margin: 11mm 0 3mm; font-family: var(--head); font-weight: 700; font-size: 20pt; line-height: 1.1; }
+  .stop { margin: 2mm 0 0; font-family: var(--head); font-weight: 700; font-size: 80pt; line-height: 0.95; letter-spacing: -0.02em; color: var(--red); }
+  .sub { margin: 4mm 0 0; font-size: 15pt; line-height: 1.4; }
+  h2 { margin: 8mm 0 2.5mm; font-family: var(--head); font-weight: 700; font-size: 20pt; line-height: 1.1; }
   .rules { list-style: none; margin: 0; padding: 0; }
-  .rules li { padding: 2.8mm 0; border-top: 0.3mm solid var(--line); font-size: 13pt; line-height: 1.35; }
+  .rules li { padding: 2mm 0; border-top: 0.3mm solid var(--line); font-size: 13pt; line-height: 1.35; }
   .rules li:last-child { border-bottom: 0.3mm solid var(--line); }
   .rules b { font-weight: 700; }
   p, li { text-wrap: pretty; }
-  .bottom { margin-top: auto; display: grid; grid-template-columns: 1fr 40mm; gap: 14mm; align-items: end; padding: 8mm 0; }
+  .bottom { margin-top: auto; display: grid; grid-template-columns: 1fr 40mm; gap: 14mm; align-items: end; padding: 5mm 0 4mm; }
   .help h3 { margin: 0 0 3mm; font-family: var(--head); font-weight: 700; font-size: 17pt; line-height: 1.1; }
   .help p { margin: 0 0 1.8mm; font-size: 12.5pt; line-height: 1.35; }
   .help p:last-child { margin-bottom: 0; }
@@ -34,8 +34,12 @@
   .qr .code { width: 40mm; height: 40mm; }
   .qr .code svg { display: block; width: 100%; height: 100%; }
   .qr p { margin: 2mm 0 0; font-size: 10.5pt; line-height: 1.3; }
-  .foot { display: flex; justify-content: space-between; gap: 8mm; padding: 4mm 0 8mm; border-top: 0.3mm solid var(--line); font-size: 9.5pt; color: var(--muted); }
+  .foot { padding: 3.5mm 0 7mm; border-top: 0.3mm solid var(--line); font-size: 9.5pt; line-height: 1.35; color: var(--muted); }
+  .foot p { margin: 0; }
   .foot b { color: var(--ink); }
+  /* The real address in a size you can read and compare with the address bar, against copies of the site. */
+  .foot .addr { margin-top: 1mm; }
+  .foot #qrurl { font-size: 12pt; }
 </style>
 </head>
 <body>
@@ -44,16 +48,17 @@
   <p class="notice">Varning för bedragare</p>
   <h1>Ringer någon och ber dig använda BankID?</h1>
   <p class="stop">Lägg på.</p>
-  <p class="sub">Ring upp själv, på ett nummer du har letat upp själv. Det är aldrig oartigt mot en bedragare.</p>
+  <p class="sub">Säg bara ”Jag ringer upp själv” och lägg på. Ring sedan upp på ett nummer du har letat upp själv. Det är aldrig oartigt mot en bedragare.</p>
 
   <h2>Kom ihåg</h2>
   <ul class="rules">
-    <li><b>BankID är din namnteckning.</b> Använd det bara när du själv har startat något.</li>
+    <li><b>BankID är din namnteckning.</b> Använd det bara när du själv har startat något, och läs vad som står i appen innan du godkänner. Är du osäker, tryck på Avbryt.</li>
+    <li><b>Frågar BankID-appen om ett telefonsamtal?</b> Svara som det är. Säger någon i telefon vad du ska svara, är det en bluff.</li>
     <li><b>Ingen bank eller polis som ringer dig</b> ber dig flytta pengar, lämna koder eller installera appar.</li>
     <li><b>Polisen hämtar aldrig</b> kort, kontanter eller smycken hemma hos dig.</li>
     <li><b>Klicka inte på länkar i sms</b> om paket, skatt, skulder eller ditt konto.</li>
     <li><b>Bråttom är ett varningstecken.</b> Du har alltid tid att lägga på och fråga någon.</li>
-    <li><b>Bestäm ett familjeord.</b> Röster kan härmas med AI, men inte ett ord bara ni känner till.</li>
+    <li><b>Bestäm ett familjeord.</b> AI kan härma röster, men inte ett ord som bara ni känner till.</li>
   </ul>
 
   <div class="bottom">
@@ -70,8 +75,8 @@
   </div>
 
   <div class="foot">
-    <span><b>Är det bluff?</b> En fristående och gratis bluffkoll</span>
-    <span id="qrurl"></span>
+    <p>Sidan <b>Är det bluff?</b> är fristående och gratis. Den ber aldrig om BankID, koder eller pengar.</p>
+    <p class="addr">Den riktiga adressen: <b id="qrurl"></b></p>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
