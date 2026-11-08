@@ -40,7 +40,7 @@ check('Inga slitna AI-ord?', hits.length === 0, hits.join(', '));
 check('Varningen om att verktyget kan missa knep står bara en gång?', (html.match(/kan missa nya knep/g) || []).length === 1);
 
 // 3. Phone numbers are the right ones and the links dial the same numbers.
-for (const [shown, tel] of [['114 14', '11414'], ['112', '112'], ['116 006', '116006']]) {
+for (const [shown, tel] of [['114 14', '11414'], ['112', '112'], ['116 006', '116006'], ['020-10 54 00', '020105400'], ['08-27 00 29', '08270029'], ['0771-567 567', '0771567567']]) {
   check(`Numret ${shown} finns och länken ringer ${tel}?`, page.replace(/&nbsp;/g, ' ').includes('>' + shown + '<') && page.includes('href="tel:' + tel + '"'));
 }
 
@@ -51,6 +51,12 @@ check('Alla id är unika?', dupes.length === 0, dupes.join(', '));
 const refs = [...page.matchAll(/(?:aria-controls|aria-labelledby|aria-describedby|for)="([^"]+)"/g)].map(m => m[1]);
 const missing = refs.filter(r => ids.indexOf(r) === -1);
 check('Alla etiketter och flikar pekar på något som finns?', missing.length === 0, missing.join(', '));
+// Every element the page script looks up must exist, or everything set up after that line stops working.
+// Ids that the script creates itself (in its own HTML strings) are left out.
+const made = [...ui.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
+const used = [...new Set([...ui.matchAll(/\$\('#([\w-]+)'/g), ...ui.matchAll(/getElementById\('([\w-]+)'\)/g)].map(m => m[1]))];
+const lost = used.filter(id => made.indexOf(id) === -1 && ids.indexOf(id) === -1);
+check('Alla element som skriptet använder finns på sidan?', lost.length === 0, lost.join(', '));
 
 // 5. Text contrast in both themes (WCAG AA, 4.5:1).
 function tokens(block) {

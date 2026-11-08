@@ -8,6 +8,7 @@ Härifrån byggs sajten i roten, alltså `index.html` och `app.js`. Allt körs m
 - `parts/ui.js`: det som händer på sidan, till exempel flikarna, testet, delningen och skärmbildsläsningen.
 - `ar-det-bluff.html`: hela sidan i en fil, i den version som används på claude.ai. Analysen av meddelandena, motorn, finns bara här, mellan `/*ENGINE-START*/` och `/*ENGINE-END*/`. Ändringar i motorn görs direkt i den här filen.
 - `fonts/fonts.css`: typsnittsreglerna som byggs in i `index.html`. Själva typsnittsfilerna ligger i `fonts/` i roten.
+- `sw-template.js`: mallen för `sw.js`, som sparar en kopia av sidan i telefonen så att den öppnas även utan uppkoppling.
 - `bilder/`: källorna till affischen, delningsbilden och ikonerna, och en testbild för skärmbildsläsningen.
 - `regress.cjs`, `regress-cases.cjs`, `regress-extra.cjs`, `test-engine.cjs` och `verify.cjs`: testerna.
 
@@ -16,10 +17,27 @@ Härifrån byggs sajten i roten, alltså `index.html` och `app.js`. Allt körs m
 ```
 node src/assemble.cjs src
 node src/deploy-build.cjs src --poster
-cp src/deploy/index.html src/deploy/app.js .
+cp src/deploy/index.html src/deploy/app.js src/deploy/sw.js .
 ```
 
-`assemble.cjs` bygger om `ar-det-bluff.html` från `parts/` och motorn. `deploy-build.cjs` gör webbversionen i `src/deploy/`, som inte sparas i git. Där byts Google Fonts mot sajtens egna typsnitt, och besöksräknaren och skärmbildsläsningen kopplas på. `--poster` lägger till länken till `affisch.pdf`.
+`assemble.cjs` bygger om `ar-det-bluff.html` från `parts/` och motorn. `deploy-build.cjs` gör webbversionen i `src/deploy/`, som inte sparas i git. Där byts Google Fonts mot sajtens egna typsnitt, och besöksräknaren, skärmbildsläsningen och kopian för användning utan uppkoppling kopplas på. `--poster` lägger till länken till `affisch.pdf`.
+
+## Säkerhet och användning utan uppkoppling
+
+- `index.html` har en säkerhetsregel (Content Security Policy) som gör att sidans skript bara får kontakta besöksräknaren och, för skärmbildsläsningen, jsDelivr. Löftet att den inklistrade texten aldrig lämnar enheten hålls alltså av webbläsaren själv. Lägger du till något som hämtas från en annan adress måste regeln i `deploy-build.cjs` ändras, annars stoppas det. Kontrollsumman för reservskriptet räknas ut automatiskt.
+- Skärmbildsläsaren (`TESSERACT_SRI` i `parts/ui.js`) och besöksräknaren (`count.v5.js` i `deploy-build.cjs`) har kontrollsummor. Byts versionen räknas summan om med `curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A`.
+- `sw.js` sparar sidan, `app.js`, typsnitten och ikonen i telefonen. Varje bygge får ett nytt namn på kopian, så en ny version ersätter den gamla på en gång. Sidan hämtas alltid från nätet först, och kopian används bara utan uppkoppling eller om nätet inte har svarat på fyra sekunder.
+- Startar inte `app.js` (en mycket gammal webbläsare eller en avbruten nedladdning) visar ett litet reservskript alla flikar efter varandra, så att stegen för den som har blivit lurad alltid går att läsa.
+
+Skulle kopian i telefonerna behöva stängas av, publicera den här `sw.js` i stället. Den tar bort kopian och avregistrerar sig själv hos varje besökare som öppnar sidan:
+
+```
+self.addEventListener('install', function () { self.skipWaiting(); });
+self.addEventListener('activate', function (e) {
+  e.waitUntil(caches.keys().then(function (k) { return Promise.all(k.map(function (n) { return caches.delete(n); })); })
+    .then(function () { return self.registration.unregister(); }));
+});
+```
 
 ## Testa
 

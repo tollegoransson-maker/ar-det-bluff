@@ -60,7 +60,7 @@ var Bluffkoll = (function () {
       re: [W('(?:skicka|skickade|skickat|fått|fick|kom)[^.!?\\n]{0,40}(?:kod|koden|koder)[^.!?\\n]{0,40}(?:av misstag|till fel nummer|felaktigt|av en slump)|råkade (?:ange|skriva in|skriva|använda|uppge|lägga in) ditt (?:nummer|telefonnummer|mobilnummer)|(?:sent|send)[^.!?\\n]{0,40}code[^.!?\\n]{0,30}(?:by mistake|wrong number)')] },
     { id: 'code_sms', w: 3, neg: true,
       title: 'Ber dig lämna en kod som du har fått',
-      why: 'Koden i ett sms från banken, BankID eller en app är nyckeln till ditt konto. Den som får den kan logga in som du, till exempel i WhatsApp eller banken.',
+      why: 'Koden i ett sms från banken eller en app är nyckeln till ditt konto. Den som får den kan logga in som du, till exempel i WhatsApp eller banken.',
       todo: 'Ge aldrig bort en kod du har fått, oavsett vem som frågar.',
       re: [
         W('(?:skicka|skickar|svara med|lämna|uppge|berätta|läs upp|läsa upp|ge mig|ge oss|vidarebefordra|dela|säg|säga)[^.!?\\n]{0,45}(?:engångskod\\w*|sms-?kod\\w*|verifieringskod\\w*|bekräftelsekod\\w*|säkerhetskod\\w*|aktiveringskod\\w*|inloggningskod\\w*|bank-?id-?kod\\w*|koden (?:du (?:har )?fått|som (?:du )?(?:har )?fått|(?:som )?du (?:just |nyss |precis )?(?:har )?(?:fått|fick|får)|i sms\\w*|från (?:banken|sms\\w*)|vi (?:har )?skickat|vi skickade|som kom))'),
@@ -70,7 +70,7 @@ var Bluffkoll = (function () {
       ] },
     { id: 'swish_receive', w: 3, neg: true,
       title: 'Säger att du måste göra något för att ta emot pengar',
-      why: 'För att ta emot pengar behöver du aldrig använda BankID, godkänna något eller lämna kortuppgifter. Det du godkänner är i själva verket en betalning från dig.',
+      why: 'För att ta emot en Swish eller en vanlig överföring behöver du aldrig använda BankID, godkänna något eller lämna kortuppgifter. Det du godkänner är i själva verket en betalning från dig.',
       todo: 'Godkänn ingenting. Pengar som skickas till dig kommer in utan att du gör något.',
       re: [
         W('(?:ta emot|tar emot|få|motta)[^.!?\\n]{0,40}(?:swish\\w*|betalning\\w*|pengar\\w*|beloppet|ersättning\\w*|återbetalning\\w*|utbetalning\\w*)[^.!?\\n]{0,60}(?:bank[- ]?id|godkänn\\w*|signera\\w*|legitimera\\w*|kortuppgifter\\w*|kortnummer|fyll i|logga in)'),
@@ -79,7 +79,7 @@ var Bluffkoll = (function () {
       ] },
     { id: 'cards', w: 3, neg: true, ctx: /(?:^|[^\p{L}])(?:jag|vi)\s+$/iu, skip: /(?:våra|vårt|vår|our)\s+(?:\p{L}+\s+)?(?:bankuppgifter|kontouppgifter|kontonummer|bankgiro\w*|betalningsuppgifter|bank details|account details|banking details)/iu,
       title: 'Ber om kortuppgifter, lösenord eller personnummer',
-      why: 'Banker, myndigheter och seriösa företag ber aldrig om sådant i sms, mejl eller chatt.',
+      why: 'Banker, myndigheter och seriösa företag ber aldrig om kortuppgifter eller lösenord i sms, mejl eller chatt. Personnummer ska du bara lämna när du själv har kontaktat företaget.',
       todo: 'Lämna inga kortuppgifter, lösenord eller personnummer.',
       re: [
         W('(?:ange|anger|uppge|uppger|lämna|lämnar|skicka|skickar|svara med|fyll i|fylla i|fyller i|skriv in|skriva in|bekräfta|bekräftar|verifiera|verifierar|uppdatera|uppdaterar|registrera|registrerar|lägg till|lägga till|dela|delar|knappa in|mata in|behöver (?:jag|vi)(?: få)?|vill (?:jag|vi) (?:ha|få)|måste (?:jag|vi) (?:ha|få))[^.!?\\n]{0,45}(?:kortuppgifter\\w*|kortnummer\\w*|kortinformation\\w*|kortdetaljer\\w*|betalkort\\w*|kreditkort\\w*|cvc|cvv|cvv2|bankuppgifter\\w*|kontouppgifter\\w*|kontonummer\\w*|clearingnummer\\w*|betalningsuppgifter\\w*|betaluppgifter\\w*|betalningsinformation\\w*|inloggningsuppgifter\\w*|lösenord\\w*|personnummer\\w*)'),
@@ -96,7 +96,7 @@ var Bluffkoll = (function () {
       ] },
     { id: 'guaranteed', w: 3,
       title: 'Lovar garanterad eller orimligt hög vinst',
-      why: 'Garanterad avkastning finns inte, och ingen seriös placering ger flera procent i månaden. Den som lovar det försöker lura dig.',
+      why: 'Ingen investering är både snabb, enkel och säker, och ingen seriös placering ger flera procent i månaden. Den som lovar det försöker lura dig.',
       todo: 'Skicka inga pengar och lämna inga uppgifter.',
       re: [W('garanterad (?:avkastning|vinst|inkomst|ränta)|garanterat (?:avkastning|vinst|resultat)|riskfri\\w* (?:investering\\w*|avkastning|vinst)|helt utan risk|(?:avkastning|vinst|tjäna|tjänar|ger|gav|få|får|fick|ökar|ökade|växer|växte)[^.!?\\n]{0,40}\\d+(?:[,.]\\d+)? ?(?:%|procent) (?:i|per|varje|om) (?:månaden|månad|veckan|vecka|dagen|dag|dygnet)|guaranteed (?:returns?|profits?|income)|risk[- ]free|(?:insättning|investering|placering) på \\d[\\d  .]*\\s?(?:kr|kronor|sek|€|\\$|usd)[^.!?\\n]{0,60}?(?:nästa vecka|om en vecka|inom en vecka|på en vecka|i morgon|inom \\d+ dagar|på \\d+ dagar|om \\d+ dagar)[^.!?\\n]{0,30}?\\d[\\d  .]*\\s?(?:kr|kronor|sek|€|\\$|usd)')] },
     { id: 'advance_fee', w: 3, neg: true,
@@ -112,8 +112,8 @@ var Bluffkoll = (function () {
       ] },
     { id: 'bankid_fix', w: 2.5,
       title: 'Påstår att ditt BankID måste åtgärdas',
-      why: 'Bedragare skickar ofta meddelanden om att BankID har spärrats eller måste förnyas. Förnya bara BankID i din banks egen app, aldrig via en länk eller på uppmaning i telefon.',
-      todo: 'Förnya eller lås upp BankID bara i din banks egen app, som du öppnar själv.',
+      why: 'Bedragare skickar ofta meddelanden om att BankID har spärrats eller måste förnyas. Ett spärrat BankID går inte att låsa upp, och nytt BankID skaffar du bara via din bank, aldrig via en länk eller på uppmaning i telefon.',
+      todo: 'Skaffa eller förnya BankID bara via din banks app eller internetbank, som du öppnar själv.',
       re: [
         W('(?:förnya|förnyar|aktivera|aktiverar|återaktivera|reaktivera|uppdatera|uppdaterar|lås upp|låsa upp)[^.!?\\n]{0,45}' + EID),
         W(EID + '[^.!?\\n]{0,45}(?:spärrat|spärrats|spärras|blockerat|blockerats|blockeras|upphör|går ut|har gått ut|löper ut|har löpt ut|ogiltigt|ogiltig|inaktiverat|inaktiveras|måste förnyas|behöver förnyas|(?:måste|behöver) (?:uppdateras|aktiveras|verifieras|bekräftas)|kommer att (?:spärras|inaktiveras|sluta fungera)|slutar (?:att )?fungera|stängs av|har stängts av|avslutas)')
@@ -434,13 +434,15 @@ var Bluffkoll = (function () {
         words++;
       }
     }
-    var out = [], from = [], to = [], mixed = [];
+    var out = [], from = [], to = [], mixed = [], runEnd = -1;
     for (i = 0; i < pts.length; i++) {
       var c = pts[i].c, s = pts[i].s, e = pts[i].e, wid = pts[i].w;
       if (ZW.test(c)) continue;
       if (PICT.test(c)) {
         var prev = out.length ? out[out.length - 1] : '';
-        for (j = i + 1; j < pts.length && (PICT.test(pts[j].c) || ZW.test(pts[j].c)); j++);
+        // The end of a run of emoji is found once per run, not once per emoji (a long run froze the page).
+        if (runEnd <= i) for (runEnd = i + 1; runEnd < pts.length && (PICT.test(pts[runEnd].c) || ZW.test(pts[runEnd].c)); runEnd++);
+        j = runEnd;
         if (LETTER.test(prev) && j < pts.length && LETTER.test(pts[j].c)) continue;
         c = ' ';
       } else if (BRACKET[c] && i + 3 < pts.length && pts[i + 1].c === '.' && pts[i + 2].c === BRACKET[c] &&
@@ -498,14 +500,20 @@ var Bluffkoll = (function () {
     return out;
   }
 
+  // A brand's pattern is built the first time it is needed, or ahead of time by warm().
+  // It also matches "Nordeas", "Polisens": the Swedish genitive.
+  function brandRe(b) {
+    if (!b.re) b.re = new RegExp('(^|[^\\p{L}\\p{N}])((?:' + b.words + ')s?)(?![\\p{L}\\p{N}])', b.cs ? 'gu' : 'giu');
+    return b.re;
+  }
+
   function findBrands(text) {
     var found = [];
     BRANDS.forEach(function (b) {
       if (!b.words) return;
-      // Also "Nordeas", "Polisens": the Swedish genitive.
-      if (!b.re) b.re = new RegExp('(^|[^\\p{L}\\p{N}])((?:' + b.words + ')s?)(?![\\p{L}\\p{N}])', b.cs ? 'gu' : 'giu');
-      b.re.lastIndex = 0;
-      var m = b.re.exec(text);
+      var re = brandRe(b);
+      re.lastIndex = 0;
+      var m = re.exec(text);
       if (m) found.push({ b: b, i: m.index + m[1].length, t: m[2] });
     });
     found.sort(function (a, c) { return a.i - c.i; });
@@ -683,7 +691,7 @@ var Bluffkoll = (function () {
     var asksPay = sig.pay_words || sig.link_hint || LINK_RE.test(text) || /obetal\w*|unpaid|outstanding|betalas|(?:inte|ej) (?:är |har )?betal\w*|är betald/iu.test(text);
     if (small.length && (sig.fee_words || sig.parcel) && asksPay) {
       flags.push({ id: 'small_fee', w: 2, title: 'Ber dig betala en liten avgift',
-        why: 'En liten summa för frakt, tull eller ombokning är ett lockbete. Det bedragarna egentligen vill åt är dina kortuppgifter.',
+        why: 'Bedragare ber ofta om en liten summa för frakt, tull eller ombokning för att komma åt dina kortuppgifter. Riktig tull finns, sedan juli 2026 även på billiga paket från länder utanför EU, men den betalar du i fraktbolagets app eller på deras webbplats.',
         todo: 'Betala aldrig via en länk i ett meddelande. Kolla leveransen i fraktbolagets egen app.', matches: small });
     }
     var family = sig.family_greet || sig.family_claim;
@@ -736,7 +744,7 @@ var Bluffkoll = (function () {
     var who = found.filter(function (f) { return f.b.g === 'gov' || f.b.g === 'bank' || f.b.g === 'debt'; })[0];
     if (who && (who.b.g === 'debt' ? strong : asks)) {
       flags.push({ id: 'impersonation', w: 1, title: 'Säger sig komma från ' + who.b.name,
-        why: 'Banker, myndigheter och inkassobolag ber aldrig om koder, kortuppgifter eller BankID i sms, och avsändarnamn går att förfalska.',
+        why: 'Banker, myndigheter och inkassobolag ber aldrig om koder eller kortuppgifter i sms, och avsändarnamn går att förfalska.',
         todo: 'Kontakta ' + who.b.name + ' själv, via deras egen app, webbplats eller ett nummer du letar upp.',
         matches: [{ s: who.i, e: who.i + who.t.length, t: who.t }] });
     }
@@ -867,7 +875,28 @@ var Bluffkoll = (function () {
     };
   }
 
-  return { analyze: analyze };
+  // Runs every pattern on a short sample in slices of 25 ms while the page is idle, so that the browser has compiled
+  // them before the first real check. Without it the first check takes over half a second on a slow phone.
+  function warm() {
+    var list = [], k = 0, sample = 'Hej BankID 19 kr a@b.se https://x.se/a 070-174 06 35';
+    RULES.forEach(function (r) { list.push.apply(list, r.re); if (r.ctx) list.push(r.ctx); if (r.skip) list.push(r.skip); });
+    BRANDS.forEach(function (b) { if (b.words) list.push(brandRe(b)); });
+    list.push(NEG, ENCOURAGE, CUT, AFTER_NEG, LINK_RE, LINK2, EMAIL_RE, AMOUNT_RE, PICT, LETTER, WORDCH, ZW);
+    list = list.filter(function (re) { return re instanceof RegExp; });
+    var later = typeof requestIdleCallback === 'function' ? requestIdleCallback : function (f) { setTimeout(f, 1); };
+    (function step() {
+      try {
+        var end = Date.now() + 25;
+        while (k < list.length && Date.now() < end) {
+          var re = list[k++];
+          re.lastIndex = 0; re.test(sample); re.lastIndex = 0; re.test(sample); re.lastIndex = 0;
+        }
+        if (k < list.length) later(step); else analyze(sample);
+      } catch (e) {}
+    })();
+  }
+
+  return { analyze: analyze, warm: warm };
 })();
 /*ENGINE-END*/
 
@@ -875,7 +904,13 @@ var Bluffkoll = (function () {
   'use strict';
   var SHARE_URL = location.protocol.indexOf('http') === 0 ? location.origin + location.pathname.replace(/index\.html$/, '') : 'https://tollegoransson-maker.github.io/ar-det-bluff/';
   var CAN_OCR = true;
+  var CAN_SW = true;
   var TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+  // Kontrollsumman gör att webbläsaren vägrar köra filen om någon har ändrat den. Räkna om den om versionen byts:
+  // curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
+  var TESSERACT_SRI = 'sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F';
+  // Den svenska språkdatan med låst version, så att samma fil används tills vi själva byter.
+  var TESS_LANG = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/swe@1.0.0/4.0.0_best_int';
   var reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
@@ -990,7 +1025,7 @@ var Bluffkoll = (function () {
     mamma: 'Hej mamma! Det är jag. Jag har tappat min telefon så det här är mitt nya nummer, spara det. Jag måste betala en räkning idag men kommer inte åt min bank. Kan du swisha 4 800 kr? Jag betalar tillbaka imorgon ❤️',
     skatt: 'Skatteverket: Du har en skatteåterbäring på 2 341 kr som inte har kunnat betalas ut. Ange dina kortuppgifter senast idag för att få pengarna: skatteverket-aterbetalning.example',
     blocket: 'Hej! Jag vill köpa din soffa och betalar direkt via Swish. Jag har skickat en betalningsförfrågan. Godkänn med BankID så får du pengarna. Mvh Anna',
-    vanligt: 'Hej! Påminnelse om din tid hos tandläkaren tisdag 12 november kl. 14.30. Välkommen! Behöver du avboka, hör av dig senast dagen innan.'
+    vanligt: 'Hej! Påminnelse om din tid hos tandläkaren torsdag 12 november kl. 14.30. Välkommen! Behöver du avboka, hör av dig senast dagen innan.'
   };
   var VERDICT = {
     high: { title: 'Det här är troligen en bluff', sub: 'Klicka inte på länkar och svara inte. Ring bara nummer som du redan har eller själv har letat upp.' },
@@ -1062,14 +1097,17 @@ var Bluffkoll = (function () {
       h += '<p class="official">Länken går till <strong>' + esc(official[0].reg) + '</strong>, som är den riktiga adressen till ' + esc(official[0].brand.name) +
         '. Öppna ändå hellre appen eller webbplatsen själv.</p>';
     }
-    var todos = r.todos.slice(0, 2);
+    var todos = r.todos.slice(0, 2).map(esc);
+    // Bluff-sms kan rapporteras till 7726, som alla mobiloperatörer tar emot (Skatteverket och operatörerna).
+    if (r.level === 'high') todos.push('Är det ett sms? Vidarebefordra det till 7726. Dit kan du rapportera bluff-sms, oavsett operatör.');
     if (todos.length && r.level !== 'low') {
-      h += '<h4>Gör så här</h4><ul class="list">' + todos.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+      h += '<h4>Gör så här</h4><ul class="list">' + todos.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>';
     }
     var flags = numbered(r.flags);
     if (flags.length) {
       h += '<h4>' + (r.level === 'low' ? 'Det här reagerade vi på' : 'Varningstecknen i meddelandet') + '</h4>' +
-        '<div class="marked" id="hl">' + highlight(text, flags) + '</div>' +
+        // Bara den del som har kollats visas markerad. En mycket lång text gjorde annars sidan seg.
+        '<div class="marked" id="hl">' + highlight(r.truncated ? text.slice(0, 20000) : text, flags) + (r.truncated ? ' …' : '') + '</div>' +
         '<ol class="key">' + flags.map(function (f) { return '<li><strong>' + esc(f.title) + '.</strong> ' + esc(f.why) + '</li>'; }).join('') + '</ol>';
     }
     if (asked && !exKey && window.goatcounter) {
@@ -1136,9 +1174,10 @@ var Bluffkoll = (function () {
 
   /* Skärmbild: texten läses av i webbläsaren, bilden skickas ingenstans */
   var ocrFile = $('#ocr-file'), ocrStatus = $('#ocr-status');
-  function loadScript(src) {
+  function loadScript(src, integrity) {
     return new Promise(function (resolve, reject) {
       var s = document.createElement('script');
+      if (integrity) { s.integrity = integrity; s.crossOrigin = 'anonymous'; }
       s.src = src;
       s.onload = resolve;
       s.onerror = reject;
@@ -1176,26 +1215,59 @@ var Bluffkoll = (function () {
     x.putImageData(d, 0, 0);
     return c;
   }
+  // Vad textläsaren håller på med, i ord som går att förstå.
+  var OCR_STAGE = {
+    'loading tesseract core': 'Hämtar textläsaren …',
+    'initializing tesseract': 'Startar textläsaren …',
+    'loading language traineddata': 'Hämtar svensk språkdata, cirka 2,5 MB …',
+    'initializing api': 'Startar textläsaren …'
+  };
+  // Händer ingenting på två minuter ger vi upp, i stället för att låta en text stå kvar för evigt.
+  // Det räcker gott för att hämta språkdatan även på en mycket långsam uppkoppling.
+  var OCR_PATIENCE = 120000;
   function readImage(file) {
     // Var det gick fel avgör vad vi säger: bilden, hämtningen av textläsaren eller själva läsningen.
-    var canvas, stage = 'bild';
+    var canvas, stage = 'bild', worker = null, gaveUp = false, timer = null;
+    function fail() {
+      ocrStatus.textContent = stage === 'bild' ? 'Bilden gick inte att öppna. Ta en vanlig skärmbild och försök igen, eller skriv av meddelandet.'
+        : stage === 'hamta' ? 'Det gick inte att hämta textläsaren. Kontrollera internetanslutningen, eller skriv av meddelandet.'
+        : 'Det gick inte att läsa texten i bilden. Prova en tydligare skärmbild, eller skriv av meddelandet.';
+      track('skarmbild-fel');
+    }
+    function patience() {
+      clearTimeout(timer);
+      timer = setTimeout(function () { gaveUp = true; if (worker) worker.terminate(); fail(); }, OCR_PATIENCE);
+    }
     ocrStatus.textContent = 'Läser in bilden …';
     toImage(file).then(function (img) {
       canvas = prepare(img);
       URL.revokeObjectURL(img.src);
       stage = 'hamta';
+      patience();
       if (window.Tesseract) return null;
-      ocrStatus.textContent = 'Hämtar textläsaren. Första gången kan det ta en stund …';
-      return loadScript(TESSERACT);
+      ocrStatus.textContent = 'Hämtar textläsaren, cirka 4 MB. Första gången kan det ta en stund …';
+      return loadScript(TESSERACT, TESSERACT_SRI);
     }).then(function () {
+      if (gaveUp) throw new Error('gave up');
       return window.Tesseract.createWorker('swe', 1, {
-        logger: function (m) { if (m.status === 'recognizing text') ocrStatus.textContent = 'Läser texten … ' + Math.round(m.progress * 100) + ' %'; }
+        langPath: TESS_LANG,
+        logger: function (m) {
+          if (gaveUp) return;
+          patience();
+          if (m.status === 'recognizing text') ocrStatus.textContent = 'Läser texten … ' + Math.round(m.progress * 100) + ' %';
+          else if (OCR_STAGE[m.status]) ocrStatus.textContent = OCR_STAGE[m.status];
+        }
       });
-    }).then(function (worker) {
+    }).then(function (w) {
+      worker = w;
+      if (gaveUp) { w.terminate(); throw new Error('gave up'); }
       stage = 'las';
-      return worker.recognize(canvas).then(function (res) { worker.terminate(); return res.data.text; },
-        function (e) { worker.terminate(); throw e; });
+      patience();
+      return w.recognize(canvas).then(function (res) { w.terminate(); return res.data.text; },
+        function (e) { w.terminate(); throw e; });
     }).then(function (text) {
+      clearTimeout(timer);
+      if (gaveUp) return;
       // Pratbubblor bryter rader mitt i meningar och länkar. Lägg ihop dem igen, men behåll tomma rader.
       text = String(text || '').replace(/[ \t]+\n/g, '\n').replace(/-\n(?=\S)/g, '-').replace(/([^\n])\n(?!\n)/g, '$1 ').replace(/\n{3,}/g, '\n\n').trim();
       if (!text) { ocrStatus.textContent = 'Vi hittade ingen text i bilden. Prova en tydligare skärmbild, eller skriv av meddelandet.'; return; }
@@ -1206,10 +1278,8 @@ var Bluffkoll = (function () {
       ocrStatus.textContent = 'Texten är avläst från bilden. Rätta den i rutan om något blev fel.';
       track('skarmbild-last');
     }).catch(function () {
-      ocrStatus.textContent = stage === 'bild' ? 'Bilden gick inte att öppna. Ta en vanlig skärmbild och försök igen, eller skriv av meddelandet.'
-        : stage === 'hamta' ? 'Det gick inte att hämta textläsaren. Kontrollera internetanslutningen, eller skriv av meddelandet.'
-        : 'Det gick inte att läsa texten i bilden. Prova en tydligare skärmbild, eller skriv av meddelandet.';
-      track('skarmbild-fel');
+      clearTimeout(timer);
+      if (!gaveUp) fail();
     });
   }
   if (CAN_OCR) {
@@ -1224,6 +1294,7 @@ var Bluffkoll = (function () {
   /* Samtal */
   var TIPS = {
     caller: 'Lägg på och ring upp själv, på ett nummer du har letat upp.',
+    transfer: 'Riktiga banker, myndigheter och företag kopplar inte samtal till varandra. Ring själv på ett nummer du har letat upp.',
     bankid:'Legitimera dig inte. Den som får dig att använda BankID kan ta lån och tömma konton i ditt namn.',
     codes: 'Säg inga koder eller kortnummer, inte ens om personen redan vet ditt namn och personnummer.',
     money: 'Det finns inga säkra konton. Flytta inga pengar.',
@@ -1247,7 +1318,7 @@ var Bluffkoll = (function () {
     }
     trackOnce('samtal-lagg-pa');
     // Råden står redan under raderna man har kryssat i, så rutan upprepar dem inte.
-    callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det du har kryssat i är precis så bedragare arbetar. En riktig bank, polis eller myndighet ber dig aldrig om det här. Vill du kontrollera, ring själv upp på ett nummer du har letat upp, till exempel på bankens webbplats eller på ditt kort.</p>' +
+    callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det du har kryssat i är precis så bedragare arbetar. En riktig bank, polis eller myndighet som ringer dig gör aldrig så. Vill du kontrollera, ring själv upp på ett nummer du har letat upp, till exempel på bankens webbplats eller på ditt kort.</p>' +
       (stop.indexOf('pickup') !== -1 ? '<p class="verdict-more"><strong>Öppna inte dörren.</strong> Ring 112 om någon är på väg hem till dig.</p>' : '') +
       '<p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' + speakButton() + '</div>';
   }
@@ -1297,8 +1368,8 @@ var Bluffkoll = (function () {
   /* Testa dig själv */
   var QUIZ = [
     { from: 'Sms', text: 'Tullverket: Din försändelse har stoppats i tullen. Betala avgiften 29 kr idag för att undvika retur: https://tull-avgift.example', answer: 'bluff',
-      why: 'Liten avgift, bråttom och en okänd adress. Myndigheter tar inte betalt via länkar i sms.' },
-    { from: 'Sms', text: 'Påminnelse: Din tid hos tandläkaren är tisdag 14 maj kl. 09.30. Välkommen! Behöver du avboka, ring kliniken.', answer: 'akta',
+      why: 'Tullverket skickar aldrig sms. Tull på paket tar fraktbolaget ut, i sin app eller på sin webbplats. Här är det dessutom bråttom och en okänd adress.' },
+    { from: 'Sms', text: 'Påminnelse: Din tid hos tandläkaren är tisdag 11 maj kl. 09.30. Välkommen! Behöver du avboka, ring kliniken.', answer: 'akta',
       why: 'En vanlig påminnelse. Ingen länk, inga koder och inget krav på pengar.' },
     { from: 'Sms från ett okänt nummer', text: 'Hej pappa, det är jag. Mobilen gick sönder så jag lånar en kompis telefon. Kan du swisha 3 000 kr? Förklarar sen ❤️', answer: 'bluff',
       why: 'Så låter ”Hej mamma”-bluffen: ny telefon och pengar på en gång. Ring ditt barn på det vanliga numret.' },
@@ -1307,7 +1378,7 @@ var Bluffkoll = (function () {
     { from: 'Sms', text: 'Skatteverket: Du har en återbetalning på 1 846 kr. Ange dina kortuppgifter för utbetalning: skatteverket-se.example', answer: 'bluff',
       why: 'Skatteverket frågar aldrig efter kortuppgifter i sms, och adressen är inte skatteverket.se.' },
     { from: 'Telefonsamtal', text: '”Hej, det här är bankens säkerhetsavdelning. Vi ser misstänkta köp på ditt kort. Logga in med BankID så stoppar vi dem.”', answer: 'bluff',
-      why: 'Banken ber dig aldrig använda BankID i telefon. Lägg på och ring bankens nummer själv.' },
+      why: 'Banken ringer aldrig oväntat och ber dig logga in med BankID. Lägg på och ring bankens nummer själv.' },
     { from: 'Avisering i Swish-appen', text: 'Du har fått 250 kr från Anna Berg. Meddelande: Tack för lånet!', answer: 'akta',
       why: 'Pengar som kommer in kräver ingenting av dig. Du behöver inte godkänna något.' },
     { from: 'Sms', text: 'Grattis! Du är utvald att testa en ny mobiltelefon för 19 kr. Svara inom 1 timme: tiny.example/3kTx9q', answer: 'bluff',
@@ -1362,7 +1433,7 @@ var Bluffkoll = (function () {
   /* Dela */
   var hasUrl = SHARE_URL.indexOf('http') === 0;
   var shareText = 'Hej! Här är en sida där du kan kolla om ett sms eller ett samtal är en bluff' + (hasUrl ? ': ' + SHARE_URL : '.') +
-    '\n\nKom ihåg: ingen bank eller polis ber dig någonsin använda BankID i telefon. Lägg på och ring upp själv.';
+    '\n\nKom ihåg: ingen bank eller polis ringer oväntat och ber dig använda BankID. Lägg på och ring upp själv.';
   var shareMsg = $('#sharemsg'), shareLink = $('#sharelink'), status = $('#copystatus');
   shareMsg.value = shareText;
   if (hasUrl) shareLink.value = SHARE_URL;
@@ -1378,4 +1449,14 @@ var Bluffkoll = (function () {
   if (TABS.indexOf(hash) !== -1) selectTab(hash);
   updateCall();
   quizQuestion(false);
+  window.addEventListener('load', function () {
+    // Förbereder analysen medan sidan står still, så att första svaret kommer snabbt även på en långsam telefon.
+    setTimeout(function () { try { Bluffkoll.warm(); } catch (e) {} }, 1000);
+    // På webbversionen sparas sidan i telefonen, så att den fungerar också utan uppkoppling.
+    if (CAN_SW && 'serviceWorker' in navigator && location.protocol === 'https:') {
+      try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {}
+    }
+  });
+  // Talar om för reservskriptet på sidan att allt har startat. Annars visas alla flikar utan skript.
+  window.bluffReady = true;
 })();

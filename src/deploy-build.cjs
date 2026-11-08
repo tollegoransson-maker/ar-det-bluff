@@ -33,14 +33,39 @@ const engine = art.slice(art.indexOf('/*ENGINE-START*/'), art.indexOf('/*ENGINE-
 const artUrl = "var SHARE_URL = 'https://tollegoransson-maker.github.io/ar-det-bluff/';";
 if (ui.indexOf(artUrl) === -1) throw new Error('SHARE_URL line not found');
 if (ui.indexOf('var CAN_OCR = false;') === -1) throw new Error('CAN_OCR line not found');
+if (ui.indexOf('var CAN_SW = false;') === -1) throw new Error('CAN_SW line not found');
 const webUi = ui.replace(artUrl, "var SHARE_URL = location.protocol.indexOf('http') === 0 ? location.origin + location.pathname.replace(/index\\.html$/, '') : 'https://tollegoransson-maker.github.io/ar-det-bluff/';")
-  .replace('var CAN_OCR = false;', 'var CAN_OCR = true;').trim();
+  .replace('var CAN_OCR = false;', 'var CAN_OCR = true;')
+  .replace('var CAN_SW = false;', 'var CAN_SW = true;').trim();
+const app = engine + '\n\n' + webUi + '\n';
+const appVersion = crypto.createHash('sha1').update(app).digest('hex').slice(0, 8);
+
+// If app.js never runs (an old browser, or the download broke off), this shows all tabs one after the other,
+// so that the steps for victims can always be read. app.js sets window.bluffReady when it has started.
+const fallback = "if(!window.bluffReady)document.documentElement.className+=' nojs';";
+const sha256 = s => crypto.createHash('sha256').update(s, 'utf8').digest('base64');
+// The browser itself keeps the promise that the pasted text never leaves the page: scripts may only talk to the
+// counter and, for screenshot reading, to jsDelivr. 'wasm-unsafe-eval' is needed by the screenshot reader.
+const csp = [
+  "default-src 'none'",
+  "script-src 'self' 'sha256-" + sha256(fallback) + "' https://gc.zgo.at https://cdn.jsdelivr.net 'wasm-unsafe-eval'",
+  "worker-src 'self' blob:",
+  // data: lets the screenshot reader load its own built-in WebAssembly; it cannot send anything anywhere.
+  "connect-src 'self' data: https://cdn.jsdelivr.net https://kollabluffen.goatcounter.com",
+  "img-src 'self' data: blob: https://kollabluffen.goatcounter.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
+  "manifest-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'"
+].join('; ');
 
 const pre = [
   '<!doctype html>',
   '<html lang="sv">',
   '<head>',
   '<meta charset="utf-8">',
+  '<meta http-equiv="Content-Security-Policy" content="' + csp + '">',
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   '<meta property="og:title" content="Är det bluff?">',
   '<meta property="og:description" content="Kolla om ett sms, mejl eller samtal är ett bedrägeri. Gratis och på svenska.">',
@@ -50,7 +75,7 @@ const pre = [
   '<meta property="og:image" content="' + SITE + 'og.png">',
   '<meta property="og:image:width" content="1200">',
   '<meta property="og:image:height" content="630">',
-  '<meta property="og:image:alt" content="Är det bluff? Lägg på om någon ber dig använda BankID i telefon.">',
+  '<meta property="og:image:alt" content="Är det bluff? Lägg på om någon ringer och ber dig använda BankID.">',
   '<meta name="twitter:card" content="summary_large_image">',
   '<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">',
   '<meta name="theme-color" content="#111315" media="(prefers-color-scheme: dark)">',
@@ -62,18 +87,30 @@ const pre = [
   '<style>:root{color-scheme:light}[hidden]{display:none!important}</style>'
 ].join('\n');
 
-const counter = '<script data-goatcounter="https://kollabluffen.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>';
-const index = pre + '\n' + headPart + '\n</head>\n<body>\n' + bodyPart + '\n<script src="app.js"></script>\n' + counter + '\n</body>\n</html>\n';
-const app = engine + '\n\n' + webUi + '\n';
+// The counter script has a fixed version and a checksum, so the browser refuses it if anyone changes it.
+const counter = '<script data-goatcounter="https://kollabluffen.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js" ' +
+  'integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ" crossorigin="anonymous"></script>';
+// ?v= makes browsers fetch the new app.js together with a new index.html instead of reusing an old copy.
+const index = pre + '\n' + headPart + '\n</head>\n<body>\n' + bodyPart + '\n<script src="app.js?v=' + appVersion + '"></script>\n<script>' + fallback + '</script>\n' + counter + '\n</body>\n</html>\n';
+
+// The service worker keeps a copy of the page so that it opens without a connection. Every build gets its own cache name,
+// so a new version replaces the old one in one go. Pages are fetched from the network first; the copy is only used offline
+// or when the network has not answered in four seconds. To switch it off, see src/README.md.
+const swVersion = crypto.createHash('sha1').update(index + app).digest('hex').slice(0, 8);
+const sw = fs.readFileSync(path.join(dir, 'sw-template.js'), 'utf8')
+  .replace("'%VERSION%'", "'" + swVersion + "'")
+  .replace("'%APP%'", "'app.js?v=" + appVersion + "'");
+if (sw.indexOf('%') !== -1) throw new Error('sw-template.js still has a placeholder');
 
 fs.mkdirSync(path.join(dir, 'deploy'), { recursive: true });
 fs.writeFileSync(path.join(dir, 'deploy', 'index.html'), index);
 fs.writeFileSync(path.join(dir, 'deploy', 'app.js'), app);
+fs.writeFileSync(path.join(dir, 'deploy', 'sw.js'), sw);
 fs.mkdirSync(path.join(dir, 'deploy', 'fonts'), { recursive: true });
 for (const f of fs.readdirSync(path.join(dir, 'fonts'))) {
   if (f !== 'fonts.css') fs.copyFileSync(path.join(dir, 'fonts', f), path.join(dir, 'deploy', 'fonts', f));
 }
-for (const [name, text] of [['index.html', index], ['app.js', app]]) {
+for (const [name, text] of [['index.html', index], ['app.js', app], ['sw.js', sw]]) {
   const buf = Buffer.from(text, 'utf8');
   console.log(name, buf.length, 'bytes, sha1', crypto.createHash('sha1').update(buf).digest('hex'), ', backslashes:', (text.match(/\\/g) || []).length);
 }

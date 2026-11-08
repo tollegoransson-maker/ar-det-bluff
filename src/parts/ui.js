@@ -2,7 +2,13 @@
   'use strict';
   var SHARE_URL = 'https://tollegoransson-maker.github.io/ar-det-bluff/';
   var CAN_OCR = false;
+  var CAN_SW = false;
   var TESSERACT = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+  // Kontrollsumman gör att webbläsaren vägrar köra filen om någon har ändrat den. Räkna om den om versionen byts:
+  // curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
+  var TESSERACT_SRI = 'sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F';
+  // Den svenska språkdatan med låst version, så att samma fil används tills vi själva byter.
+  var TESS_LANG = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/swe@1.0.0/4.0.0_best_int';
   var reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
@@ -117,7 +123,7 @@
     mamma: 'Hej mamma! Det är jag. Jag har tappat min telefon så det här är mitt nya nummer, spara det. Jag måste betala en räkning idag men kommer inte åt min bank. Kan du swisha 4 800 kr? Jag betalar tillbaka imorgon ❤️',
     skatt: 'Skatteverket: Du har en skatteåterbäring på 2 341 kr som inte har kunnat betalas ut. Ange dina kortuppgifter senast idag för att få pengarna: skatteverket-aterbetalning.example',
     blocket: 'Hej! Jag vill köpa din soffa och betalar direkt via Swish. Jag har skickat en betalningsförfrågan. Godkänn med BankID så får du pengarna. Mvh Anna',
-    vanligt: 'Hej! Påminnelse om din tid hos tandläkaren tisdag 12 november kl. 14.30. Välkommen! Behöver du avboka, hör av dig senast dagen innan.'
+    vanligt: 'Hej! Påminnelse om din tid hos tandläkaren torsdag 12 november kl. 14.30. Välkommen! Behöver du avboka, hör av dig senast dagen innan.'
   };
   var VERDICT = {
     high: { title: 'Det här är troligen en bluff', sub: 'Klicka inte på länkar och svara inte. Ring bara nummer som du redan har eller själv har letat upp.' },
@@ -189,14 +195,17 @@
       h += '<p class="official">Länken går till <strong>' + esc(official[0].reg) + '</strong>, som är den riktiga adressen till ' + esc(official[0].brand.name) +
         '. Öppna ändå hellre appen eller webbplatsen själv.</p>';
     }
-    var todos = r.todos.slice(0, 2);
+    var todos = r.todos.slice(0, 2).map(esc);
+    // Bluff-sms kan rapporteras till 7726, som alla mobiloperatörer tar emot (Skatteverket och operatörerna).
+    if (r.level === 'high') todos.push('Är det ett sms? Vidarebefordra det till 7726. Dit kan du rapportera bluff-sms, oavsett operatör.');
     if (todos.length && r.level !== 'low') {
-      h += '<h4>Gör så här</h4><ul class="list">' + todos.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+      h += '<h4>Gör så här</h4><ul class="list">' + todos.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>';
     }
     var flags = numbered(r.flags);
     if (flags.length) {
       h += '<h4>' + (r.level === 'low' ? 'Det här reagerade vi på' : 'Varningstecknen i meddelandet') + '</h4>' +
-        '<div class="marked" id="hl">' + highlight(text, flags) + '</div>' +
+        // Bara den del som har kollats visas markerad. En mycket lång text gjorde annars sidan seg.
+        '<div class="marked" id="hl">' + highlight(r.truncated ? text.slice(0, 20000) : text, flags) + (r.truncated ? ' …' : '') + '</div>' +
         '<ol class="key">' + flags.map(function (f) { return '<li><strong>' + esc(f.title) + '.</strong> ' + esc(f.why) + '</li>'; }).join('') + '</ol>';
     }
     if (asked && !exKey && window.goatcounter) {
@@ -263,9 +272,10 @@
 
   /* Skärmbild: texten läses av i webbläsaren, bilden skickas ingenstans */
   var ocrFile = $('#ocr-file'), ocrStatus = $('#ocr-status');
-  function loadScript(src) {
+  function loadScript(src, integrity) {
     return new Promise(function (resolve, reject) {
       var s = document.createElement('script');
+      if (integrity) { s.integrity = integrity; s.crossOrigin = 'anonymous'; }
       s.src = src;
       s.onload = resolve;
       s.onerror = reject;
@@ -303,26 +313,59 @@
     x.putImageData(d, 0, 0);
     return c;
   }
+  // Vad textläsaren håller på med, i ord som går att förstå.
+  var OCR_STAGE = {
+    'loading tesseract core': 'Hämtar textläsaren …',
+    'initializing tesseract': 'Startar textläsaren …',
+    'loading language traineddata': 'Hämtar svensk språkdata, cirka 2,5 MB …',
+    'initializing api': 'Startar textläsaren …'
+  };
+  // Händer ingenting på två minuter ger vi upp, i stället för att låta en text stå kvar för evigt.
+  // Det räcker gott för att hämta språkdatan även på en mycket långsam uppkoppling.
+  var OCR_PATIENCE = 120000;
   function readImage(file) {
     // Var det gick fel avgör vad vi säger: bilden, hämtningen av textläsaren eller själva läsningen.
-    var canvas, stage = 'bild';
+    var canvas, stage = 'bild', worker = null, gaveUp = false, timer = null;
+    function fail() {
+      ocrStatus.textContent = stage === 'bild' ? 'Bilden gick inte att öppna. Ta en vanlig skärmbild och försök igen, eller skriv av meddelandet.'
+        : stage === 'hamta' ? 'Det gick inte att hämta textläsaren. Kontrollera internetanslutningen, eller skriv av meddelandet.'
+        : 'Det gick inte att läsa texten i bilden. Prova en tydligare skärmbild, eller skriv av meddelandet.';
+      track('skarmbild-fel');
+    }
+    function patience() {
+      clearTimeout(timer);
+      timer = setTimeout(function () { gaveUp = true; if (worker) worker.terminate(); fail(); }, OCR_PATIENCE);
+    }
     ocrStatus.textContent = 'Läser in bilden …';
     toImage(file).then(function (img) {
       canvas = prepare(img);
       URL.revokeObjectURL(img.src);
       stage = 'hamta';
+      patience();
       if (window.Tesseract) return null;
-      ocrStatus.textContent = 'Hämtar textläsaren. Första gången kan det ta en stund …';
-      return loadScript(TESSERACT);
+      ocrStatus.textContent = 'Hämtar textläsaren, cirka 4 MB. Första gången kan det ta en stund …';
+      return loadScript(TESSERACT, TESSERACT_SRI);
     }).then(function () {
+      if (gaveUp) throw new Error('gave up');
       return window.Tesseract.createWorker('swe', 1, {
-        logger: function (m) { if (m.status === 'recognizing text') ocrStatus.textContent = 'Läser texten … ' + Math.round(m.progress * 100) + ' %'; }
+        langPath: TESS_LANG,
+        logger: function (m) {
+          if (gaveUp) return;
+          patience();
+          if (m.status === 'recognizing text') ocrStatus.textContent = 'Läser texten … ' + Math.round(m.progress * 100) + ' %';
+          else if (OCR_STAGE[m.status]) ocrStatus.textContent = OCR_STAGE[m.status];
+        }
       });
-    }).then(function (worker) {
+    }).then(function (w) {
+      worker = w;
+      if (gaveUp) { w.terminate(); throw new Error('gave up'); }
       stage = 'las';
-      return worker.recognize(canvas).then(function (res) { worker.terminate(); return res.data.text; },
-        function (e) { worker.terminate(); throw e; });
+      patience();
+      return w.recognize(canvas).then(function (res) { w.terminate(); return res.data.text; },
+        function (e) { w.terminate(); throw e; });
     }).then(function (text) {
+      clearTimeout(timer);
+      if (gaveUp) return;
       // Pratbubblor bryter rader mitt i meningar och länkar. Lägg ihop dem igen, men behåll tomma rader.
       text = String(text || '').replace(/[ \t]+\n/g, '\n').replace(/-\n(?=\S)/g, '-').replace(/([^\n])\n(?!\n)/g, '$1 ').replace(/\n{3,}/g, '\n\n').trim();
       if (!text) { ocrStatus.textContent = 'Vi hittade ingen text i bilden. Prova en tydligare skärmbild, eller skriv av meddelandet.'; return; }
@@ -333,10 +376,8 @@
       ocrStatus.textContent = 'Texten är avläst från bilden. Rätta den i rutan om något blev fel.';
       track('skarmbild-last');
     }).catch(function () {
-      ocrStatus.textContent = stage === 'bild' ? 'Bilden gick inte att öppna. Ta en vanlig skärmbild och försök igen, eller skriv av meddelandet.'
-        : stage === 'hamta' ? 'Det gick inte att hämta textläsaren. Kontrollera internetanslutningen, eller skriv av meddelandet.'
-        : 'Det gick inte att läsa texten i bilden. Prova en tydligare skärmbild, eller skriv av meddelandet.';
-      track('skarmbild-fel');
+      clearTimeout(timer);
+      if (!gaveUp) fail();
     });
   }
   if (CAN_OCR) {
@@ -351,6 +392,7 @@
   /* Samtal */
   var TIPS = {
     caller: 'Lägg på och ring upp själv, på ett nummer du har letat upp.',
+    transfer: 'Riktiga banker, myndigheter och företag kopplar inte samtal till varandra. Ring själv på ett nummer du har letat upp.',
     bankid:'Legitimera dig inte. Den som får dig att använda BankID kan ta lån och tömma konton i ditt namn.',
     codes: 'Säg inga koder eller kortnummer, inte ens om personen redan vet ditt namn och personnummer.',
     money: 'Det finns inga säkra konton. Flytta inga pengar.',
@@ -374,7 +416,7 @@
     }
     trackOnce('samtal-lagg-pa');
     // Råden står redan under raderna man har kryssat i, så rutan upprepar dem inte.
-    callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det du har kryssat i är precis så bedragare arbetar. En riktig bank, polis eller myndighet ber dig aldrig om det här. Vill du kontrollera, ring själv upp på ett nummer du har letat upp, till exempel på bankens webbplats eller på ditt kort.</p>' +
+    callOut.innerHTML = '<div class="verdict high"><h3 class="verdict-title">Lägg på nu</h3><p>Det du har kryssat i är precis så bedragare arbetar. En riktig bank, polis eller myndighet som ringer dig gör aldrig så. Vill du kontrollera, ring själv upp på ett nummer du har letat upp, till exempel på bankens webbplats eller på ditt kort.</p>' +
       (stop.indexOf('pickup') !== -1 ? '<p class="verdict-more"><strong>Öppna inte dörren.</strong> Ring 112 om någon är på väg hem till dig.</p>' : '') +
       '<p class="verdict-more">Har du redan gjort något av det? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' + speakButton() + '</div>';
   }
@@ -424,8 +466,8 @@
   /* Testa dig själv */
   var QUIZ = [
     { from: 'Sms', text: 'Tullverket: Din försändelse har stoppats i tullen. Betala avgiften 29 kr idag för att undvika retur: https://tull-avgift.example', answer: 'bluff',
-      why: 'Liten avgift, bråttom och en okänd adress. Myndigheter tar inte betalt via länkar i sms.' },
-    { from: 'Sms', text: 'Påminnelse: Din tid hos tandläkaren är tisdag 14 maj kl. 09.30. Välkommen! Behöver du avboka, ring kliniken.', answer: 'akta',
+      why: 'Tullverket skickar aldrig sms. Tull på paket tar fraktbolaget ut, i sin app eller på sin webbplats. Här är det dessutom bråttom och en okänd adress.' },
+    { from: 'Sms', text: 'Påminnelse: Din tid hos tandläkaren är tisdag 11 maj kl. 09.30. Välkommen! Behöver du avboka, ring kliniken.', answer: 'akta',
       why: 'En vanlig påminnelse. Ingen länk, inga koder och inget krav på pengar.' },
     { from: 'Sms från ett okänt nummer', text: 'Hej pappa, det är jag. Mobilen gick sönder så jag lånar en kompis telefon. Kan du swisha 3 000 kr? Förklarar sen ❤️', answer: 'bluff',
       why: 'Så låter ”Hej mamma”-bluffen: ny telefon och pengar på en gång. Ring ditt barn på det vanliga numret.' },
@@ -434,7 +476,7 @@
     { from: 'Sms', text: 'Skatteverket: Du har en återbetalning på 1 846 kr. Ange dina kortuppgifter för utbetalning: skatteverket-se.example', answer: 'bluff',
       why: 'Skatteverket frågar aldrig efter kortuppgifter i sms, och adressen är inte skatteverket.se.' },
     { from: 'Telefonsamtal', text: '”Hej, det här är bankens säkerhetsavdelning. Vi ser misstänkta köp på ditt kort. Logga in med BankID så stoppar vi dem.”', answer: 'bluff',
-      why: 'Banken ber dig aldrig använda BankID i telefon. Lägg på och ring bankens nummer själv.' },
+      why: 'Banken ringer aldrig oväntat och ber dig logga in med BankID. Lägg på och ring bankens nummer själv.' },
     { from: 'Avisering i Swish-appen', text: 'Du har fått 250 kr från Anna Berg. Meddelande: Tack för lånet!', answer: 'akta',
       why: 'Pengar som kommer in kräver ingenting av dig. Du behöver inte godkänna något.' },
     { from: 'Sms', text: 'Grattis! Du är utvald att testa en ny mobiltelefon för 19 kr. Svara inom 1 timme: tiny.example/3kTx9q', answer: 'bluff',
@@ -489,7 +531,7 @@
   /* Dela */
   var hasUrl = SHARE_URL.indexOf('http') === 0;
   var shareText = 'Hej! Här är en sida där du kan kolla om ett sms eller ett samtal är en bluff' + (hasUrl ? ': ' + SHARE_URL : '.') +
-    '\n\nKom ihåg: ingen bank eller polis ber dig någonsin använda BankID i telefon. Lägg på och ring upp själv.';
+    '\n\nKom ihåg: ingen bank eller polis ringer oväntat och ber dig använda BankID. Lägg på och ring upp själv.';
   var shareMsg = $('#sharemsg'), shareLink = $('#sharelink'), status = $('#copystatus');
   shareMsg.value = shareText;
   if (hasUrl) shareLink.value = SHARE_URL;
@@ -505,4 +547,14 @@
   if (TABS.indexOf(hash) !== -1) selectTab(hash);
   updateCall();
   quizQuestion(false);
+  window.addEventListener('load', function () {
+    // Förbereder analysen medan sidan står still, så att första svaret kommer snabbt även på en långsam telefon.
+    setTimeout(function () { try { Bluffkoll.warm(); } catch (e) {} }, 1000);
+    // På webbversionen sparas sidan i telefonen, så att den fungerar också utan uppkoppling.
+    if (CAN_SW && 'serviceWorker' in navigator && location.protocol === 'https:') {
+      try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {}
+    }
+  });
+  // Talar om för reservskriptet på sidan att allt har startat. Annars visas alla flikar utan skript.
+  window.bluffReady = true;
 })();
