@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const dir = process.argv[2];
 // With --poster the notice links to affisch.pdf, which only works where the site can serve that file.
 const posterLink = '\n        <p class="notice-foot">Lappen finns också som <a href="affisch.pdf" data-goatcounter-click="affisch-pdf">affisch att skriva ut</a> (pdf, A4).</p>';
-const counterNote = '\n      <p>Sidan räknar besök och hur verktyget används, till exempel hur många meddelanden som kollas och vilket svar de får. Det du skriver räknas aldrig och skickas ingenstans. Räkningen görs med GoatCounter, som bara sparar sammanräknade siffror, inte din IP-adress eller något annat som kan kopplas till dig.</p>';
+const counterNote = '\n      <p>Sidan räknar besök och hur verktyget används, till exempel hur många meddelanden som kollas och vilket svar de får. Det du skriver räknas aldrig och skickas ingenstans. Det är GoatCounter som räknar, och GoatCounter sparar bara sammanräknade siffror, inte din IP-adress eller något annat som kan kopplas till dig.</p>';
 const page = fs.readFileSync(path.join(dir, 'parts', 'page.html'), 'utf8')
   .replace('\n        <!--POSTER-->', process.argv.includes('--poster') ? posterLink : '')
   .replace('\n      <!--COUNTER-->', counterNote);

@@ -1,9 +1,9 @@
 // Service worker for "Är det bluff?". deploy-build.cjs fills in the version and writes it as sw.js.
 // It keeps a copy of the page so that it opens without a connection. Only this site's own files pass through it,
 // so it never sees what anyone pastes; the counter and the screenshot reader go straight to the network.
-var VERSION = 'b936fbe6';
+var VERSION = '7cd631fd';
 var CACHE = 'bluff-' + VERSION;
-var CORE = ['./', 'app.js?v=5ceda91f', 'fonts/atkinson-hyperlegible-next-latin.woff2', 'fonts/atkinson-hyperlegible-next-italic-latin.woff2',
+var CORE = ['./', 'app.js?v=f365f5dd', 'fonts/atkinson-hyperlegible-next-latin.woff2', 'fonts/atkinson-hyperlegible-next-italic-latin.woff2',
   'fonts/newsreader-latin.woff2', 'manifest.webmanifest', 'icon-192.png'];
 
 self.addEventListener('install', function (e) {

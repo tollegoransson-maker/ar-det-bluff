@@ -1,6 +1,6 @@
 {
   "name": "Är det bluff?",
-  "short_name": "Bluffkoll",
+  "short_name": "Är det bluff",
   "description": "Kolla om ett sms, mejl eller samtal är ett bedrägeri.",
   "lang": "sv",
   "start_url": "./",

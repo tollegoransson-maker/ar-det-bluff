@@ -57,7 +57,7 @@ const SITE = 'https://tollegoransson-maker.github.io/ar-det-bluff/';
   ['C1 samtalsutskrift', 'Hej, jag ringer från Nordeas bedrägeriavdelning. Vi har sett konstiga köp. Öppna din BankID-app så skickar jag en förfrågan som du godkänner.', 'high'],
   // The page's own texts must not warn about the page.
   ['O1 delningstexten', 'Hej! Här är en sida där du kan kolla om ett sms eller ett samtal är en bluff: ' + SITE + '\n\nKom ihåg: ingen bank eller polis ringer oväntat och ber dig använda BankID. Lägg på och ring upp själv. Sidan ber aldrig om BankID, koder eller pengar.', 'low'],
-  ['O2 testresultatet', 'Jag fick 8 av 10 rätt på bluff-testet. Klarar du det? ' + SITE + '#testa', 'low'],
+  ['O2 testresultatet', 'Jag fick 8 av 10 rätt på blufftestet. Klarar du det? ' + SITE + '#testa', 'low'],
   ['O3 egen domän', 'Kolla sms:et på https://ardetbluff.se innan du klickar. BankID ska du bara använda själv.', 'low'],
   // Ordinary messages that must stay calm.
   ['R1 bankens råd', 'Klicka aldrig på länkar i sms. Logga in i appen själv om du vill se dina köp.', 'low'],
