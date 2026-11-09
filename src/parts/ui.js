@@ -88,6 +88,9 @@
     selectTab(a.getAttribute('data-goto'), true);
     var bar = $('.tabs');
     if (bar && bar.scrollIntoView) bar.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    // Från samtalsfliken: gå direkt till rutan, så att man kan skriva in numret.
+    var f = a.getAttribute('data-focus') ? document.getElementById(a.getAttribute('data-focus')) : null;
+    if (f) f.focus();
   });
 
   /* Uppläsning: läser beskedet och råden med svensk röst, om webbläsaren har en */
@@ -228,22 +231,52 @@
         '<div class="marked" id="hl">' + highlight(r.truncated ? text.slice(0, 20000) : text, flags) + (r.truncated ? ' …' : '') + '</div>' +
         '<ol class="key">' + flags.map(function (f) { return '<li><strong>' + esc(f.title) + '.</strong> ' + esc(f.why) + '</li>'; }).join('') + '</ol>';
     }
-    if (asked && !exKey && window.goatcounter) {
-      h += helpedFor === text ? '<p class="helpful">Tack för att du svarade.</p>'
-        : '<p class="helpful" id="helpful">Hjälpte svaret dig? <button class="linkbtn" type="button" data-helpful="ja">Ja</button> eller <button class="linkbtn" type="button" data-helpful="nej">Nej</button></p>';
-    }
-    out.innerHTML = h;
+    out.innerHTML = h + helpful(text, asked);
+  }
+  function helpful(text, asked) {
+    if (!asked || exKey || !window.goatcounter) return '';
+    return helpedFor === text ? '<p class="helpful">Tack för att du svarade.</p>'
+      : '<p class="helpful" id="helpful">Hjälpte svaret dig? <button class="linkbtn" type="button" data-helpful="ja">Ja</button> eller <button class="linkbtn" type="button" data-helpful="nej">Nej</button></p>';
+  }
+
+  // Ett telefonnummer på egen hand. Sidan kan inte se vem som har ett nummer, och numret som syns kan vara förfalskat
+  // (PTS om spoofing). Svaret säger därför bara vilken sorts nummer det är och vad man ska göra. Inget slås upp någonstans.
+  var NUM_TITLE = 'Det går inte att se på ett nummer vem som ringer';
+  function renderNumber(n, text, asked) {
+    var num = '<strong>' + esc(n.shown) + '</strong>';
+    var what = n.kind === 'known' ? num + ' är ' + esc(n.known) + '.'
+      : n.kind === 'mobile' ? num + ' är ett svenskt mobilnummer.'
+      : n.kind === 'free' ? num + ' är ett svenskt 020-nummer. Det kostar inget att ringa dit.'
+      : n.kind === 'premium' ? num + ' är ett betalnummer. Samtal dit kostar extra.'
+      : n.kind === 'se' ? num + ' är ett svenskt telefonnummer.'
+      : num + ' är ett utländskt nummer' + (n.country ? ', från ' + esc(n.country) : '') + '.';
+    // PTS: ring inte tillbaka på nummer du inte känner igen. Utlandsnummer och betalnummer kan vara dyra att ringa (wangiri).
+    var back = n.kind === 'known' ? ''
+      : n.kind === 'foreign' || n.kind === 'premium'
+        ? '<p><strong>Har du ett missat samtal från numret?</strong> Ring inte tillbaka. Det kan kosta mycket att ringa utländska nummer och betalnummer. Vill någon verkligen nå dig ringer de nog igen.</p>'
+        : '<p>Känner du inte igen numret behöver du inte ringa tillbaka. Vill någon verkligen nå dig ringer de nog igen.</p>';
+    out.innerHTML = '<div class="verdict numcheck ' + (n.kind === 'premium' ? 'medium' : 'low') + '" id="verdict"><h3 class="verdict-title">' + NUM_TITLE + '</h3>' +
+      '<p>' + what + '</p>' +
+      '<p>Numret som syns kan vara förfalskat. Bedragare kan få det att se ut som att banken, polisen eller någon du känner ringer, även med ett riktigt nummer.</p>' +
+      '<p><strong>Bad någon dig använda BankID, lämna koder eller flytta pengar?</strong> Lägg på. Ring sedan upp på ett nummer du har letat upp själv.</p>' +
+      back +
+      '<p class="verdict-more">Har du redan gjort något som någon i telefon bad om? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' +
+      speakButton() + '</div>' +
+      '<p class="example-note">Fick du ett sms eller mejl från numret? Klistra in hela meddelandet i rutan, så kollar sidan det.</p>' +
+      helpful(text, asked);
   }
 
   var LEVEL_EVENT = { high: 'kollat-troligen-bluff', medium: 'kollat-var-forsiktig', low: 'kollat-inga-tecken' }, lastCounted = '';
   function run(scroll, pasted) {
     if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     var r = Bluffkoll.analyze(msg.value);
-    render(r, msg.value, scroll);
+    // Ett nummer på egen hand får ett eget svar. "Inga tydliga varningstecken" kunde läsas som att numret är säkert.
+    var num = r.level === 'low' && !exKey ? Bluffkoll.numberOnly(msg.value) : null;
+    if (num) renderNumber(num, msg.value, scroll); else render(r, msg.value, scroll);
     shownFor = r.level === 'empty' ? null : msg.value;
-    announce(r.level === 'empty' ? 'Klistra in eller skriv av ett meddelande i rutan först.' : 'Svar: ' + VERDICT[r.level].title + '.');
+    announce(r.level === 'empty' ? 'Klistra in eller skriv av ett meddelande i rutan först.' : 'Svar: ' + (num ? NUM_TITLE : VERDICT[r.level].title) + '.');
     // Ett eget meddelande räknas en gång, med svaret det fick. Exempel och text under skrivning räknas inte.
-    if (scroll && !exKey && r.level !== 'empty' && msg.value !== lastCounted) { lastCounted = msg.value; track(LEVEL_EVENT[r.level]); }
+    if (scroll && !exKey && r.level !== 'empty' && msg.value !== lastCounted) { lastCounted = msg.value; track(num ? 'kollat-nummer' : LEVEL_EVENT[r.level]); }
     if (scroll) {
       var v = $('#verdict');
       // Efter inklistring på en telefon täcker tangentbordet svaret: stäng det och visa svaret överst.

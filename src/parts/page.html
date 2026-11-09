@@ -142,6 +142,7 @@ textarea { min-height: 9.5rem; resize: vertical; }
 .verdict li + li { margin-top: 6px; }
 .verdict a { color: inherit; font-weight: 700; }
 .verdict .verdict-more { margin-top: 14px; }
+.numcheck p + p { margin-top: 12px; }
 .result h4 { margin: 32px 0 8px; font-size: 1.25rem; line-height: 1.3; }
 .list { margin: 0; padding-left: 1.25em; }
 .list li + li { margin-top: 8px; }
@@ -378,7 +379,7 @@ html.big { font-size: 118.75%; }
         <h2 class="sr">Kolla ett meddelande</h2>
         <p class="nojs-only"><strong>Verktyget fungerar inte i den här webbläsaren.</strong> Stegen och reglerna nedan gäller ändå.</p>
         <label class="label" for="msg">Klistra in meddelandet</label>
-        <p class="hint" id="msg-hint">Kopiera texten från sms:et, mejlet eller chatten och klistra in den här.</p>
+        <p class="hint" id="msg-hint">Kopiera texten från sms:et, mejlet eller chatten och klistra in den här. Du kan också skriva in ett telefonnummer.</p>
         <details class="howto">
           <summary>Hur kopierar jag ett sms?</summary>
           <ol>
@@ -443,6 +444,7 @@ html.big { font-size: 118.75%; }
         </fieldset>
         <div class="callresult" id="callresult" aria-live="polite"></div>
         <p class="callreset"><button class="linkbtn" id="callreset" type="button" hidden>Börja om</button></p>
+        <p class="panel-note">Vill du kolla numret som ringde? <a href="#panel-meddelande" data-goto="meddelande" data-focus="msg">Skriv in det under Meddelande</a>.</p>
         <p class="panel-note">Hur låter det? Polisen har <a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/telefonbedrageri/" target="_blank" rel="noopener">ett inspelat riktigt samtal</a> där en bedragare låtsas ringa från en bank.</p>
       </div>
 

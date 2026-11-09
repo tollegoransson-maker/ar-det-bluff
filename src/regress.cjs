@@ -114,7 +114,28 @@ if (!truncOk) { failed++; console.log('FAIL lång text: analyze() säger inte at
 const slowOk = slowest < 250;
 if (!slowOk) { failed++; console.log('FAIL långsammaste analysen tog ' + slowest.toFixed(0) + ' ms'); }
 
+// A phone number on its own gets its own answer: what kind of number it is, never who has it.
+const NUM = [
+  ['070-174 06 35', 'mobile'], ['0701740635', 'mobile'], ['+46 70 174 06 35', 'mobile'], ['0046 70 174 06 35', 'mobile'],
+  ['+46 070 174 06 35', 'mobile'], ['08-465 004 56', 'se'], ['Vem ringde? 08-465 004 56', 'se'], ['Ringde från 070-174 06 35', 'mobile'],
+  ['08-402 57 10', 'known'], ['+46 (0)8-402 57 10', 'known'], ['114 14', 'known'], ['020-10 54 00', 'known'],
+  ['+44 7700 900123', 'foreign:Storbritannien'], ['00225 07 00 00 00', 'foreign:Elfenbenskusten'],
+  ['+1 268 555 0100', 'foreign:USA, Kanada eller ett land i Karibien'], ['0944-000 00 00', 'premium'], ['020-00 00 00', 'free'],
+  // Not a lone number: codes, amounts, two numbers, and messages that contain a number are analysed as messages.
+  ['482917', null], ['Swisha 4 800 kr', null], ['070-174 06 35 och 08-465 004 56', null], ['Ring 070-174 06 35 kl 14', null],
+  ['Hej mamma, mitt nya nummer är 070-174 06 35, spara det', null], ['Ditt paket väntar: 070-174 06 35 https://pn-se.top/b', null]
+];
+for (const [t, exp] of NUM) {
+  const n = Bluffkoll.numberOnly(t);
+  const got = n ? n.kind + (n.kind === 'foreign' ? ':' + n.country : '') : null;
+  if (got !== exp) { failed++; console.log(`FAIL nummer "${t}": ${got} (vill ha ${exp})`); }
+}
+// No message in the suites above may be mistaken for a lone number.
+const lone = cases.filter(c => Bluffkoll.numberOnly(c[1])).map(c => c[0]);
+if (lone.length) { failed++; console.log('FAIL meddelanden som tolkas som bara ett nummer: ' + lone.join(', ')); }
+
 console.log(`\nBluffar hos granskaren: ${highScams}/${scams} troligen bluff, resten var försiktig eller sämre (se FAIL ovan).`);
 console.log(`Äkta hos granskaren: ${lowReals}/${reals} inga tecken, ingen får troligen bluff (se FAIL ovan).`);
 console.log(`Långsammaste analysen: ${slowest.toFixed(1)} ms`);
-console.log(`${cases.length + 2 - failed}/${cases.length + 2} som väntat`);
+const total = cases.length + 2 + NUM.length + 1;
+console.log(`${total - failed}/${total} som väntat`);

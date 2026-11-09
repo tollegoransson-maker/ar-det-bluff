@@ -57,6 +57,9 @@ const made = [...ui.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
 const used = [...new Set([...ui.matchAll(/\$\('#([\w-]+)'/g), ...ui.matchAll(/getElementById\('([\w-]+)'\)/g)].map(m => m[1]))];
 const lost = used.filter(id => made.indexOf(id) === -1 && ids.indexOf(id) === -1);
 check('Alla element som skriptet använder finns på sidan?', lost.length === 0, lost.join(', '));
+// The number check names a number as a bank's or authority's only if the page itself lists and dials that number.
+const unlisted = Object.keys(Bluffkoll.NUM_KNOWN).filter(d => !page.includes('href="tel:' + d + '"'));
+check('Numren som nummerkollen känner igen står och går att ringa på sidan?', unlisted.length === 0, unlisted.join(', '));
 // A calm answer must never read as a guarantee, also not for someone a scammer has sent here.
 check('Lugna svar säger att sidan aldrig kan intyga att något är äkta?', /kan aldrig intyga/.test(ui) && /Det betyder inte att meddelandet är äkta/.test(ui));
 

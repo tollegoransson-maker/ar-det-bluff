@@ -49,7 +49,7 @@ node src/test-engine.cjs src/ar-det-bluff.html
 node src/verify.cjs src
 ```
 
-- `regress.cjs` kör drygt 300 meddelanden. De flesta är realistiska bluffar och äkta meddelanden från granskningar (`regress-cases.cjs`, `regress-extra.cjs` och `regress-round3.cjs`), och vart och ett måste få rätt svar. I `regress-round3.cjs` finns bluffar som är skrivna för att ta sig förbi analysen, till exempel med siffror i stället för bokstäver, och äkta meddelanden som ser skrämmande ut. Den kontrollerar också att de två råd som visas inte säger samma sak, och att analysen går snabbt. Med `-v` visas alla meddelanden.
+- `regress.cjs` kör drygt 300 meddelanden. De flesta är realistiska bluffar och äkta meddelanden från granskningar (`regress-cases.cjs`, `regress-extra.cjs` och `regress-round3.cjs`), och vart och ett måste få rätt svar. I `regress-round3.cjs` finns bluffar som är skrivna för att ta sig förbi analysen, till exempel med siffror i stället för bokstäver, och äkta meddelanden som ser skrämmande ut. Den kontrollerar också att de två råd som visas inte säger samma sak, och att analysen går snabbt. Dessutom testar den nummerkollen (`numberOnly` i motorn), som svarar när någon skriver in bara ett telefonnummer: vilken sorts nummer det är enligt PTS nummerserier eller landsnumret, aldrig vem som har det. Inget meddelande i testerna får misstas för ett ensamt nummer. Med `-v` visas alla meddelanden.
 - `test-engine.cjs` kör 54 meddelanden.
 - `verify.cjs` gör ett femtiotal kontroller av sidan: att exemplen och testfrågorna stämmer med verktyget, att telefonnumren ringer rätt, att bankernas nummer fortfarande står på bankernas egna sidor, att texten har tillräcklig kontrast i ljust och mörkt läge och att alla länkar fungerar. Den behöver internet.
 

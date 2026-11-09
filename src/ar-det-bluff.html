@@ -142,6 +142,7 @@ textarea { min-height: 9.5rem; resize: vertical; }
 .verdict li + li { margin-top: 6px; }
 .verdict a { color: inherit; font-weight: 700; }
 .verdict .verdict-more { margin-top: 14px; }
+.numcheck p + p { margin-top: 12px; }
 .result h4 { margin: 32px 0 8px; font-size: 1.25rem; line-height: 1.3; }
 .list { margin: 0; padding-left: 1.25em; }
 .list li + li { margin-top: 8px; }
@@ -378,7 +379,7 @@ html.big { font-size: 118.75%; }
         <h2 class="sr">Kolla ett meddelande</h2>
         <p class="nojs-only"><strong>Verktyget fungerar inte i den här webbläsaren.</strong> Stegen och reglerna nedan gäller ändå.</p>
         <label class="label" for="msg">Klistra in meddelandet</label>
-        <p class="hint" id="msg-hint">Kopiera texten från sms:et, mejlet eller chatten och klistra in den här.</p>
+        <p class="hint" id="msg-hint">Kopiera texten från sms:et, mejlet eller chatten och klistra in den här. Du kan också skriva in ett telefonnummer.</p>
         <details class="howto">
           <summary>Hur kopierar jag ett sms?</summary>
           <ol>
@@ -443,6 +444,7 @@ html.big { font-size: 118.75%; }
         </fieldset>
         <div class="callresult" id="callresult" aria-live="polite"></div>
         <p class="callreset"><button class="linkbtn" id="callreset" type="button" hidden>Börja om</button></p>
+        <p class="panel-note">Vill du kolla numret som ringde? <a href="#panel-meddelande" data-goto="meddelande" data-focus="msg">Skriv in det under Meddelande</a>.</p>
         <p class="panel-note">Hur låter det? Polisen har <a href="https://polisen.se/utsatt-for-brott/polisanmalan/bedragerier/bedragerier/telefonbedrageri/" target="_blank" rel="noopener">ett inspelat riktigt samtal</a> där en bedragare låtsas ringa från en bank.</p>
       </div>
 
@@ -1680,7 +1682,79 @@ var Bluffkoll = (function () {
     })();
   }
 
-  return { analyze: analyze, warm: warm };
+  // A phone number pasted on its own. Nobody can tell from a number who is calling, and numbers can be faked (PTS on
+  // spoofing), so this only says what kind of number it is: PTS's number series (070, 072, 073, 076, 079 mobile,
+  // 020 free calls, 0900, 0939, 0944 premium rate), the country code, or one of the numbers the page itself lists.
+  // Nothing is looked up anywhere. The numbers below must match the page (verify.cjs checks them).
+  var NUM_KNOWN = {
+    '0771778899': 'ett av Handelsbankens riktiga nummer',
+    '0858840011': 'ett av Länsförsäkringars riktiga nummer',
+    '084025710': 'ett av Nordeas riktiga nummer',
+    '0774242424': 'ett av SEB:s riktiga nummer',
+    '084111011': 'ett av Swedbanks riktiga nummer',
+    '0771567567': 'ett av Skatteverkets riktiga nummer',
+    '020105400': 'Konsumenternas Bank- och finansbyrås nummer',
+    '08270029': 'Freja eID:s nummer för att spärra',
+    '11414': 'Polisens nummer',
+    '116006': 'Brottsofferjourens nummer'
+  };
+  var CC = {
+    '1': 'USA, Kanada eller ett land i Karibien', '7': 'Ryssland eller Kazakstan', '20': 'Egypten', '27': 'Sydafrika',
+    '30': 'Grekland', '31': 'Nederländerna', '32': 'Belgien', '33': 'Frankrike', '34': 'Spanien', '36': 'Ungern', '39': 'Italien',
+    '40': 'Rumänien', '41': 'Schweiz', '43': 'Österrike', '44': 'Storbritannien', '45': 'Danmark', '47': 'Norge', '48': 'Polen',
+    '49': 'Tyskland', '51': 'Peru', '52': 'Mexiko', '53': 'Kuba', '54': 'Argentina', '55': 'Brasilien', '56': 'Chile',
+    '57': 'Colombia', '58': 'Venezuela', '60': 'Malaysia', '61': 'Australien', '62': 'Indonesien', '63': 'Filippinerna',
+    '64': 'Nya Zeeland', '65': 'Singapore', '66': 'Thailand', '81': 'Japan', '82': 'Sydkorea', '84': 'Vietnam', '86': 'Kina',
+    '90': 'Turkiet', '91': 'Indien', '92': 'Pakistan', '93': 'Afghanistan', '94': 'Sri Lanka', '95': 'Myanmar', '98': 'Iran',
+    '211': 'Sydsudan', '212': 'Marocko', '213': 'Algeriet', '216': 'Tunisien', '218': 'Libyen', '220': 'Gambia', '221': 'Senegal',
+    '222': 'Mauretanien', '223': 'Mali', '224': 'Guinea', '225': 'Elfenbenskusten', '226': 'Burkina Faso', '227': 'Niger',
+    '228': 'Togo', '229': 'Benin', '230': 'Mauritius', '231': 'Liberia', '232': 'Sierra Leone', '233': 'Ghana', '234': 'Nigeria',
+    '235': 'Tchad', '236': 'Centralafrikanska republiken', '237': 'Kamerun', '238': 'Kap Verde', '240': 'Ekvatorialguinea',
+    '241': 'Gabon', '242': 'Kongo-Brazzaville', '243': 'Kongo-Kinshasa', '244': 'Angola', '245': 'Guinea-Bissau',
+    '248': 'Seychellerna', '249': 'Sudan', '250': 'Rwanda', '251': 'Etiopien', '252': 'Somalia', '253': 'Djibouti', '254': 'Kenya',
+    '255': 'Tanzania', '256': 'Uganda', '257': 'Burundi', '258': 'Moçambique', '260': 'Zambia', '261': 'Madagaskar',
+    '263': 'Zimbabwe', '264': 'Namibia', '265': 'Malawi', '266': 'Lesotho', '267': 'Botswana', '268': 'Eswatini',
+    '269': 'Komorerna', '291': 'Eritrea', '297': 'Aruba', '298': 'Färöarna', '299': 'Grönland', '350': 'Gibraltar',
+    '351': 'Portugal', '352': 'Luxemburg', '353': 'Irland', '354': 'Island', '355': 'Albanien', '356': 'Malta', '357': 'Cypern',
+    '358': 'Finland', '359': 'Bulgarien', '370': 'Litauen', '371': 'Lettland', '372': 'Estland', '373': 'Moldavien',
+    '374': 'Armenien', '375': 'Belarus', '376': 'Andorra', '377': 'Monaco', '378': 'San Marino', '380': 'Ukraina',
+    '381': 'Serbien', '382': 'Montenegro', '383': 'Kosovo', '385': 'Kroatien', '386': 'Slovenien',
+    '387': 'Bosnien och Hercegovina', '389': 'Nordmakedonien', '420': 'Tjeckien', '421': 'Slovakien', '423': 'Liechtenstein',
+    '501': 'Belize', '502': 'Guatemala', '503': 'El Salvador', '504': 'Honduras', '505': 'Nicaragua', '506': 'Costa Rica',
+    '507': 'Panama', '509': 'Haiti', '591': 'Bolivia', '592': 'Guyana', '593': 'Ecuador', '595': 'Paraguay', '597': 'Surinam',
+    '598': 'Uruguay', '670': 'Östtimor', '673': 'Brunei', '675': 'Papua Nya Guinea', '676': 'Tonga', '677': 'Salomonöarna',
+    '678': 'Vanuatu', '679': 'Fiji', '685': 'Samoa', '686': 'Kiribati', '850': 'Nordkorea', '852': 'Hongkong', '853': 'Macao',
+    '855': 'Kambodja', '856': 'Laos', '880': 'Bangladesh', '886': 'Taiwan', '960': 'Maldiverna', '961': 'Libanon',
+    '962': 'Jordanien', '963': 'Syrien', '964': 'Irak', '965': 'Kuwait', '966': 'Saudiarabien', '967': 'Jemen', '968': 'Oman',
+    '970': 'Palestina', '971': 'Förenade Arabemiraten', '972': 'Israel', '973': 'Bahrain', '974': 'Qatar', '975': 'Bhutan',
+    '976': 'Mongoliet', '977': 'Nepal', '992': 'Tadzjikistan', '993': 'Turkmenistan', '994': 'Azerbajdzjan', '995': 'Georgien',
+    '996': 'Kirgizistan', '998': 'Uzbekistan'
+  };
+  // Returns null unless the text is one phone number with at most a few words around it (such as "Vem ringde?"),
+  // no link and no other digits. A message that contains a number is still analysed as a message.
+  function numberOnly(text) {
+    var t = String(text || '').normalize('NFKC').trim();
+    if (!t || t.length > 120) return null;
+    var found = t.match(/[+(]*\d[\d  \-‐-–.()\/]*\d/g);
+    if (!found || found.length !== 1) return null;
+    var shown = found[0].trim(), rest = t.replace(found[0], ' ');
+    if (/\d/.test(rest) || /https?:|www\.|\w\.\w{2,}\//i.test(rest)) return null;
+    if ((rest.match(/\p{L}+/gu) || []).length > 5) return null;
+    var d = shown.replace(/\(0\)/g, '').replace(/[^\d+]/g, ''), intl = null;
+    if (d.charAt(0) === '+') intl = d.slice(1); else if (d.slice(0, 2) === '00') intl = d.slice(2);
+    // +46 is Sweden: continue as a Swedish number, also when the 0 was kept after +46.
+    if (intl !== null && intl.slice(0, 2) === '46') { d = ('0' + intl.slice(2)).replace(/^00/, '0'); intl = null; }
+    if (intl !== null) {
+      if (intl.length < 7 || intl.length > 15) return null;
+      return { shown: shown, kind: 'foreign', country: CC[intl.slice(0, 3)] || CC[intl.slice(0, 2)] || CC[intl.charAt(0)] || null };
+    }
+    if (d.indexOf('+') !== -1) return null;
+    if (NUM_KNOWN[d]) return { shown: shown, kind: 'known', known: NUM_KNOWN[d] };
+    if (d.charAt(0) !== '0' || d.length < 7 || d.length > 11) return null;
+    return { shown: shown, kind: /^07[02369]/.test(d) ? 'mobile' : /^020/.test(d) ? 'free' : /^09(?:00|39|44)/.test(d) ? 'premium' : 'se' };
+  }
+
+  return { analyze: analyze, warm: warm, numberOnly: numberOnly, NUM_KNOWN: NUM_KNOWN };
 })();
 /*ENGINE-END*/
 
@@ -1774,6 +1848,9 @@ var Bluffkoll = (function () {
     selectTab(a.getAttribute('data-goto'), true);
     var bar = $('.tabs');
     if (bar && bar.scrollIntoView) bar.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    // Från samtalsfliken: gå direkt till rutan, så att man kan skriva in numret.
+    var f = a.getAttribute('data-focus') ? document.getElementById(a.getAttribute('data-focus')) : null;
+    if (f) f.focus();
   });
 
   /* Uppläsning: läser beskedet och råden med svensk röst, om webbläsaren har en */
@@ -1914,22 +1991,52 @@ var Bluffkoll = (function () {
         '<div class="marked" id="hl">' + highlight(r.truncated ? text.slice(0, 20000) : text, flags) + (r.truncated ? ' …' : '') + '</div>' +
         '<ol class="key">' + flags.map(function (f) { return '<li><strong>' + esc(f.title) + '.</strong> ' + esc(f.why) + '</li>'; }).join('') + '</ol>';
     }
-    if (asked && !exKey && window.goatcounter) {
-      h += helpedFor === text ? '<p class="helpful">Tack för att du svarade.</p>'
-        : '<p class="helpful" id="helpful">Hjälpte svaret dig? <button class="linkbtn" type="button" data-helpful="ja">Ja</button> eller <button class="linkbtn" type="button" data-helpful="nej">Nej</button></p>';
-    }
-    out.innerHTML = h;
+    out.innerHTML = h + helpful(text, asked);
+  }
+  function helpful(text, asked) {
+    if (!asked || exKey || !window.goatcounter) return '';
+    return helpedFor === text ? '<p class="helpful">Tack för att du svarade.</p>'
+      : '<p class="helpful" id="helpful">Hjälpte svaret dig? <button class="linkbtn" type="button" data-helpful="ja">Ja</button> eller <button class="linkbtn" type="button" data-helpful="nej">Nej</button></p>';
+  }
+
+  // Ett telefonnummer på egen hand. Sidan kan inte se vem som har ett nummer, och numret som syns kan vara förfalskat
+  // (PTS om spoofing). Svaret säger därför bara vilken sorts nummer det är och vad man ska göra. Inget slås upp någonstans.
+  var NUM_TITLE = 'Det går inte att se på ett nummer vem som ringer';
+  function renderNumber(n, text, asked) {
+    var num = '<strong>' + esc(n.shown) + '</strong>';
+    var what = n.kind === 'known' ? num + ' är ' + esc(n.known) + '.'
+      : n.kind === 'mobile' ? num + ' är ett svenskt mobilnummer.'
+      : n.kind === 'free' ? num + ' är ett svenskt 020-nummer. Det kostar inget att ringa dit.'
+      : n.kind === 'premium' ? num + ' är ett betalnummer. Samtal dit kostar extra.'
+      : n.kind === 'se' ? num + ' är ett svenskt telefonnummer.'
+      : num + ' är ett utländskt nummer' + (n.country ? ', från ' + esc(n.country) : '') + '.';
+    // PTS: ring inte tillbaka på nummer du inte känner igen. Utlandsnummer och betalnummer kan vara dyra att ringa (wangiri).
+    var back = n.kind === 'known' ? ''
+      : n.kind === 'foreign' || n.kind === 'premium'
+        ? '<p><strong>Har du ett missat samtal från numret?</strong> Ring inte tillbaka. Det kan kosta mycket att ringa utländska nummer och betalnummer. Vill någon verkligen nå dig ringer de nog igen.</p>'
+        : '<p>Känner du inte igen numret behöver du inte ringa tillbaka. Vill någon verkligen nå dig ringer de nog igen.</p>';
+    out.innerHTML = '<div class="verdict numcheck ' + (n.kind === 'premium' ? 'medium' : 'low') + '" id="verdict"><h3 class="verdict-title">' + NUM_TITLE + '</h3>' +
+      '<p>' + what + '</p>' +
+      '<p>Numret som syns kan vara förfalskat. Bedragare kan få det att se ut som att banken, polisen eller någon du känner ringer, även med ett riktigt nummer.</p>' +
+      '<p><strong>Bad någon dig använda BankID, lämna koder eller flytta pengar?</strong> Lägg på. Ring sedan upp på ett nummer du har letat upp själv.</p>' +
+      back +
+      '<p class="verdict-more">Har du redan gjort något som någon i telefon bad om? <a href="#lurad" data-goto="lurad">Se vad du ska göra nu</a>.</p>' +
+      speakButton() + '</div>' +
+      '<p class="example-note">Fick du ett sms eller mejl från numret? Klistra in hela meddelandet i rutan, så kollar sidan det.</p>' +
+      helpful(text, asked);
   }
 
   var LEVEL_EVENT = { high: 'kollat-troligen-bluff', medium: 'kollat-var-forsiktig', low: 'kollat-inga-tecken' }, lastCounted = '';
   function run(scroll, pasted) {
     if (canSpeak && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     var r = Bluffkoll.analyze(msg.value);
-    render(r, msg.value, scroll);
+    // Ett nummer på egen hand får ett eget svar. "Inga tydliga varningstecken" kunde läsas som att numret är säkert.
+    var num = r.level === 'low' && !exKey ? Bluffkoll.numberOnly(msg.value) : null;
+    if (num) renderNumber(num, msg.value, scroll); else render(r, msg.value, scroll);
     shownFor = r.level === 'empty' ? null : msg.value;
-    announce(r.level === 'empty' ? 'Klistra in eller skriv av ett meddelande i rutan först.' : 'Svar: ' + VERDICT[r.level].title + '.');
+    announce(r.level === 'empty' ? 'Klistra in eller skriv av ett meddelande i rutan först.' : 'Svar: ' + (num ? NUM_TITLE : VERDICT[r.level].title) + '.');
     // Ett eget meddelande räknas en gång, med svaret det fick. Exempel och text under skrivning räknas inte.
-    if (scroll && !exKey && r.level !== 'empty' && msg.value !== lastCounted) { lastCounted = msg.value; track(LEVEL_EVENT[r.level]); }
+    if (scroll && !exKey && r.level !== 'empty' && msg.value !== lastCounted) { lastCounted = msg.value; track(num ? 'kollat-nummer' : LEVEL_EVENT[r.level]); }
     if (scroll) {
       var v = $('#verdict');
       // Efter inklistring på en telefon täcker tangentbordet svaret: stäng det och visa svaret överst.
